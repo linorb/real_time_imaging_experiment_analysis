@@ -5,7 +5,7 @@ list_of_dates = os.listdir(FILE_PATH)
 
 MOUSE = '6'
 CAGE = '40'
-for date in list_of_dates
+for date in list_of_dates:
     mouse_folder = FILE_PATH + "\\" + date + "\\" + 'c%sm%s' %(CAGE, MOUSE)
     list_of_dirs = os.listdir(mouse_folder)
     for dir_name in list_of_dirs:
