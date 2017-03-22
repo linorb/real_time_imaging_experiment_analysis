@@ -2,16 +2,35 @@
 """
 import ConfigParser
 import os
+import time
 
 import numpy as np
 import scipy.io as sio
-import matplotlib.pyplot as plt
 
 MOUSE = '3'
 CAGE = '40'
-RESULTS_PATH = r'D:\dev\real_time_imaging_experiment_analysis\reconstructing_traces_for_all_roi'
-CHOSEN_CELLS = np.array([36, 53, 80, 89, 158, 181, 195, 229, 258, 290, 321, 336,
-                339, 357, 366, 392, 394, 399, 408, 439, 446, 448, 449, 465, 490])
+RESULTS_PATH = r'D:\dev\real_time_imaging_experiment_analysis\reconstructing_traces_for_all_roi\linear_experiment'
+
+# FOR C40M3:
+CHOSEN_CELLS = np.array([36, 53, 80, 89, 158, 181, 195, 229, 258,
+                         290, 321, 336, 339, 357, 366, 392, 394,
+                         399, 408, 439, 446, 448, 449, 465, 490])
+
+# FOR C40M6:
+# CHOSEN_CELLS = np.array([44, 61, 78, 96, 154, 157, 172, 195,
+#                          214, 226, 244, 247, 259, 261, 262,
+#                          286, 287, 290, 301, 303, 314, 337,
+#                          340, 346, 348, 368, 372, 374, 383,
+#                          389, 391, 407, 415, 418, 419, 448,
+#                          448, 460, 472, 473, 474, 479, 488,
+#                          501, 517, 569])
+
+def create_output_directory(dirname):
+    try:
+        os.mkdir(dirname)
+    except WindowsError:
+        # Directory already exists
+        pass
 
 def randomize_partial_events_mat(events, number_of_rois):
     """Create partial events matrix from the input events, that contains a
@@ -67,7 +86,7 @@ def find_p_value_for_activation(events, number_of_rois,
         number_of_activations[i] = count_number_of_activations(partial_events_mat, number_of_active_rois)
     p_value = np.sum(number_of_activations < number_of_original_activations)/ float(number_of_permutations)
 
-    return p_value
+    return p_value, number_of_activations
 
 def delete_rois_from_event_matrix(events, chosen_rois):
     """Delete the chosen ROIs from the event matrix
@@ -105,9 +124,9 @@ def calculate_p_value_for_one_trial(results_path, chosen_cells):
     events = np.load(events_filename)
 
     # Live events are the events of the real experiment
-    live_results_path = match_path(config_filename)
-    live_events_filename = live_results_path + "\\" + "events.npy"
-    live_events = np.load(live_events_filename)
+    live_events = events[chosen_cells, :]
+    # live_events_path = match_path(config_filename)
+    # live_events = np.load(live_events_path + "events.npy")
 
     number_of_neurons = events.shape[0]
 
@@ -124,58 +143,60 @@ def calculate_p_value_for_one_trial(results_path, chosen_cells):
     number_of_original_activations = count_number_of_activations(live_events,
                                                                  number_of_active_rois)
 
-    p_value = find_p_value_for_activation(not_chosen_events,
+    [p_value, number_of_activations] = find_p_value_for_activation(not_chosen_events,
                                           number_of_rois,
                                           number_of_active_rois,
                                           number_of_permutations,
                                           number_of_original_activations)
 
-    return p_value
+    return p_value, number_of_activations, number_of_original_activations
 
 def calculate_p_value_for_one_session(session_path, chosen_cells):
     list_of_dirs = os.listdir(session_path)
-    p_value = []
+    p_value_entire_session = []
+    number_of_activations_entire_session = []
+    number_of_original_activations = []
     for dir_name in list_of_dirs:
         if dir_name[:7] == 'results':
             results_path = session_path + "\\" + dir_name
-            p_value.append(calculate_p_value_for_one_trial(results_path, chosen_cells))
+            [p_value, number_of_activations, original_activation] = calculate_p_value_for_one_trial(results_path, chosen_cells)
+            p_value_entire_session.append(p_value)
+            number_of_activations_entire_session.append(number_of_activations)
+            number_of_original_activations.append(original_activation)
 
-    session_p_value = np.mean(p_value)
-    session_std = np.std(p_value)
-
-    return session_p_value, session_std, p_value
+    return  p_value_entire_session, number_of_activations_entire_session, number_of_original_activations
 
 def main():
     """This main is for a full experiment p value calculation (more then one session)"""
     full_path = RESULTS_PATH
     list_of_sessions = os.listdir(full_path)
-    all_sessions_p_value = []
-    all_sessions_std = []
+    permutations_number_of_activations = []
     p_value_per_trial = []
+    all_session_activations = []
     for dir_name in list_of_sessions:
-        if dir_name[:6] == '201703':
+        if dir_name[:4] == '2017':
             session_path = full_path + "\\" + dir_name + "\\" + 'c' + CAGE + 'm' + MOUSE
-            [session_p_value, session_std, p_value] = \
+            [p_value, number_of_activations, number_of_original_activations] = \
                 calculate_p_value_for_one_session(session_path, CHOSEN_CELLS)
-            all_sessions_p_value.append(session_p_value)
-            all_sessions_std.append(session_std)
             p_value_per_trial.append(p_value)
+            permutations_number_of_activations.append(number_of_activations)
+            all_session_activations.append(number_of_original_activations)
 
     # Saving results
-    all_sessions_p_value = np.asarray(all_sessions_p_value)
-    all_sessions_std = np.asarray(all_sessions_std)
 
-    np.savez(RESULTS_PATH + r'\p_values.npz', all_sessions_p_value = all_sessions_p_value,
-                                             all_sessions_std = all_sessions_std,
-                                             p_value_per_trial = p_value_per_trial)
-    sio.savemat(RESULTS_PATH + r'\p_values.mat',
-                    {'all_sessions_p_value': all_sessions_p_value,
-                     'all_sessions_std': all_sessions_std,
-                     'p_value_per_trial': p_value_per_trial})
+    timed_output_dirname = '%s_%s' % (RESULTS_PATH + r'\p_values\c' + CAGE + 'm' + MOUSE + r'\p',
+                                      time.strftime('%Y_%m_%d__%H_%M_%S'))
+    create_output_directory(timed_output_dirname)
 
-    # Plotting the P values for all sessions
-    plt.figure()
-    plt.errorbar(all_sessions_p_value, all_sessions_std)
-    plt.title("P values across sessions")
+    np.savez(timed_output_dirname + r'\p_values.npz',
+             p_value_per_trial = p_value_per_trial,
+             all_permutatioms_activations = permutations_number_of_activations,
+             all_session_activations = all_session_activations)
+
+    sio.savemat(timed_output_dirname + r'\p_values.mat',
+                {'p_value_per_trial': p_value_per_trial,
+                 'all_permutatioms_activations': permutations_number_of_activations,
+                 'all_session_activations': all_session_activations})
+
 
 main()
