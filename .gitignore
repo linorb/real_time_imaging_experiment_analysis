@@ -111,3 +111,4 @@ ENV/
 
 # Results folders
 reconstructing_traces_for_all_roi/
+phase_1_preprocessed/
