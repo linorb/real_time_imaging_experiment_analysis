@@ -13,7 +13,7 @@ from real_time_imaging.tools.matlab import *
 
 MOUSE = '3'
 CAGE = '40'
-RESULTS_PATH = r'D:\dev\real_time_imaging_experiment_analysis\reconstructing_traces_for_all_roi\linear_experiment'
+RESULTS_PATH = r'D:\dev\real_time_imaging_experiment_analysis\reconstructing_traces_for_all_roi\bucket_experiment'
 MOVEMENT_PATH = r'Z:\Short term data storage\Data storage (1 year)\experiments\real_time_imaging\%s\c%sm%s\tracking\C%sM%s_Day00%d.mat'
 REAL_TIME_PATH = r'Z:\Short term data storage\Data storage (1 year)\experiments\real_time_imaging\%s\c%sm%s\real_time_imaging'
 LINEAR_EXPERIMENT_DATES = ['20170219',
@@ -21,6 +21,12 @@ LINEAR_EXPERIMENT_DATES = ['20170219',
                            '20170225',
                            '20170228',
                            '20170303']
+BUCKET_EXPERIMENT_DATES = ['20170305',
+                           '20170306',
+                           '20170307',
+                           '20170308',
+                           '20170309']
+
 DAYS = range(4, 9)
 # FOR C40M3:
 CHOSEN_CELLS = np.array([36, 53, 80, 89, 158, 181, 195, 229, 258,
@@ -425,4 +431,23 @@ def main3():
                  'all_permutatioms_activations': permutations_number_of_activations,
                  'all_session_activations': all_session_activations})
 
-main2()
+def create_full_session_water_frames(session_path, trials_indices):
+    list_of_trial_dirs = extract_certain_trial_dirs(session_path, trials_indices)
+    all_session_water_frames = []
+
+    for trial_dir_name in list_of_trial_dirs:
+        full_filename = session_path + "\\" + trial_dir_name + r'\water_dispensed_frames.pkl'
+        water_frames = cPickle.load(open(full_filename, "rb"))
+        all_session_water_frames.append(water_frames)
+
+    sio.savemat(session_path + '\water_dispensed_frames.mat', \
+                {'all_session_water_frames': all_session_water_frames})
+
+    return all_session_water_frames
+
+def main4():
+    """This main makes water dispensong frasmes for all frames"""
+    for dir_name in BUCKET_EXPERIMENT_DATES:
+        session_path = REAL_TIME_PATH %(dir_name, CAGE, MOUSE)
+        create_full_session_water_frames(session_path, MIDDLE_TRIALS_INDICES)
+
