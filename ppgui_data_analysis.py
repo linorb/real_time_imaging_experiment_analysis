@@ -21,45 +21,46 @@ CAGE = '40'
 EDGE_BINS = [1, 2, 3, 9, 10]
 EDGE_PERCENT = 0.9
 # For c40m3
-CELL_REGISTRATION_FILENAME = r'Z:\Short term data storage\Data storage (1 year)\Nitzan\c40m3\registration_110_days\cellRegistered_Final_16-Mar-2017_133500.mat'
+# CELL_REGISTRATION_FILENAME = r'Z:\Short term data storage\Data storage (1 year)\Nitzan\c40m3\registration_110_days\cellRegistered_Final_16-Mar-2017_133500.mat'
 
 # For c40m6
-# NITZAN_CELL_REGISTRATION_FILENAME = r'Z:\Short term data storage\Lab members\Nitzan\nov16_data\registration\c40m6\cellRegistered_Final_Joint_0.5.mat'
-# BAMBI_CELL_REGISTRATION_FILNAME = r'Z:\Short term data storage\Data storage (1 year)\experiments\real_time_imaging\c40m6_registered_1202-0309\registration\cellRegistered_Final_20170423_123804.mat'
+NITZAN_CELL_REGISTRATION_FILENAME = r'Z:\Short term data storage\Lab members\Nitzan\nov16_data\registration\c40m6\cellRegistered_Final_Joint_0.5.mat'
+BAMBI_CELL_REGISTRATION_FILNAME = r'Z:\Short term data storage\Data storage (1 year)\experiments\real_time_imaging\c40m6_registered_1202-0309\registration\cellRegistered_Final_20170423_123804.mat'
 
-def  load_cell_registration():
-    #Taken from Or's script - for C40M3
-    # Load the cell registration results
-    cell_registration = h5py.File(CELL_REGISTRATION_FILENAME)['cell_registered_struct'][
-        'optimal_cell_to_index_map'].value.astype(int)
-    # Compensate for 0-based indexing
-    cell_registration -= 1
-
-    nitzan_run = np.transpose(cell_registration[:5])
-    bambi_run = np.transpose(cell_registration[-5:])
-
-    return nitzan_run, bambi_run
-
-# def load_cell_registration():
-#     # For c40m6
+# def  load_cell_registration():
+#     #Taken from Or's script - for C40M3
 #     # Load the cell registration results
-#     cell_registration = scipy.io.loadmat(NITZAN_CELL_REGISTRATION_FILENAME)['optimal_cell_to_index_map'].astype(int)
+#     cell_registration = h5py.File(CELL_REGISTRATION_FILENAME)['cell_registered_struct'][
+#         'optimal_cell_to_index_map'].value.astype(int)
 #     # Compensate for 0-based indexing
 #     cell_registration -= 1
-#     nitzan_run = cell_registration[:, :5]
 #
-#     cell_registration = h5py.File(BAMBI_CELL_REGISTRATION_FILNAME)['cell_registered_struct'][
-#         'optimal_cell_to_index_map'].value.astype(int)
-#     cell_registration -= 1
-#     bambi_run = np.transpose(cell_registration[1:6])
+#     nitzan_run = np.transpose(cell_registration[:5])
+#     bambi_run = np.transpose(cell_registration[-5:])
 #
 #     return nitzan_run, bambi_run
+
+def load_cell_registration():
+    # For c40m6
+    # Load the cell registration results
+    cell_registration = scipy.io.loadmat(NITZAN_CELL_REGISTRATION_FILENAME)['optimal_cell_to_index_map'].astype(int)
+    # Compensate for 0-based indexing
+    cell_registration -= 1
+    nitzan_run = cell_registration[:, :5]
+
+    cell_registration = h5py.File(BAMBI_CELL_REGISTRATION_FILNAME)['cell_registered_struct'][
+        'optimal_cell_to_index_map'].value.astype(int)
+    cell_registration -= 1
+    bambi_run = np.transpose(cell_registration[1:6])
+
+    return nitzan_run, bambi_run
 
 def extract_nitzans_data():
     """Taken from OR's code dynamic_analysis"""
     full_bins_traces = []
     full_events_traces = []
     frame_logs = []
+    missing_trials = []
 
     for i in xrange(NUMBER_OF_SESSIONS):
         print i
@@ -72,7 +73,10 @@ def extract_nitzans_data():
             # All 3 first indices are magic to get to the required position.
             # The 1: is used to remove the first behavioral frame which is dropped
             # in the neuronal.
-            session_bins_traces.append(my_mvmt[j][0][0][3][1:].T[0])
+            try:
+                session_bins_traces.append(my_mvmt[j][0][0][3][1:].T[0])
+            except IndexError:
+                missing_trials.append([i,j])
         full_bins_traces.append(session_bins_traces)
 
         events_filename = os.path.join(r'Z:\Short term data storage\Lab members\Nitzan\nov16_data\Pre_processing\c%sm%s' %(CAGE, MOUSE),
@@ -101,7 +105,21 @@ def extract_nitzans_data():
     events_traces = []
     for i in xrange(NUMBER_OF_SESSIONS):
         # The second index in frame_logs is for taking only the linear trials indices
-        events_traces.append(full_events_traces[i][:, frame_logs[i][1][0]:frame_logs[i][-1][0]])
+        if len(missing_trials) == 0:
+            events_traces.append(full_events_traces[i][:, frame_logs[i][1][0]:frame_logs[i][-1][0]])
+        else:
+            missing_trials = np.array(missing_trials)
+            if i in missing_trials[:, 0]:
+                linear_trials =  []
+                missing_session_trials = missing_trials[missing_trials[:, 0] == i, 1]
+                number_of_trials = len(frame_logs[i])
+                for j in range(1, number_of_trials-1):
+                    if not(j in missing_session_trials):
+                        linear_trials.append(full_events_traces[i][:, frame_logs[i][j][0]:frame_logs[i][j][1]])
+                linear_trials = np.concatenate(linear_trials, axis=1)
+                events_traces.append(linear_trials)
+            else:
+                events_traces.append(full_events_traces[i][:, frame_logs[i][1][0]:frame_logs[i][-1][0]])
 
     bucket_events_traces = {'first': [], 'last': []}
     for i in xrange(NUMBER_OF_SESSIONS):
@@ -111,7 +129,8 @@ def extract_nitzans_data():
 
     bins_traces = []
     fixed_bins_traces = full_bins_traces[:]
-    fixed_bins_traces[4] = fixed_bins_traces[4][:2] + fixed_bins_traces[4][3:]
+    # For c40m3 do this correction:
+    # fixed_bins_traces[4] = fixed_bins_traces[4][:2] + fixed_bins_traces[4][3:]
     for i in xrange(NUMBER_OF_SESSIONS):
         bins_trace = []
         for j in xrange(len(fixed_bins_traces[i])):
@@ -544,16 +563,16 @@ def main():
     [nitzan_first_bucket_dynamics, nitzan_last_bucket_dynamics] = analyze_bucket_dynamics_for_data(data['nitzan'])
     [bambi_first_bucket_dynamics, bambi_last_bucket_dynamics] = analyze_bucket_dynamics_for_data(data['bambi'])
 
-    # plot_dynamics(nitzan_first_bucket_dynamics, nitzan_last_bucket_dynamics, 'Nitzan')
-    # plot_dynamics(bambi_first_bucket_dynamics, bambi_last_bucket_dynamics, 'Bambi')
+    plot_dynamics(nitzan_first_bucket_dynamics, nitzan_last_bucket_dynamics, 'Nitzan')
+    plot_dynamics(bambi_first_bucket_dynamics, bambi_last_bucket_dynamics, 'Bambi')
 
-    plot_average_recurrence(nitzan_first_bucket_dynamics, nitzan_last_bucket_dynamics, 'Nitzan')
-    plot_average_recurrence(bambi_first_bucket_dynamics, bambi_last_bucket_dynamics, 'Bambi')
-
-    plot_compare_average([nitzan_first_bucket_dynamics, nitzan_last_bucket_dynamics],
-                         [bambi_first_bucket_dynamics, bambi_last_bucket_dynamics],'events_rate')
-    plot_compare_average([nitzan_first_bucket_dynamics, nitzan_last_bucket_dynamics],
-                         [bambi_first_bucket_dynamics, bambi_last_bucket_dynamics], 'ensamble_correlation')
+    # plot_average_recurrence(nitzan_first_bucket_dynamics, nitzan_last_bucket_dynamics, 'Nitzan')
+    # plot_average_recurrence(bambi_first_bucket_dynamics, bambi_last_bucket_dynamics, 'Bambi')
+    #
+    # plot_compare_average([nitzan_first_bucket_dynamics, nitzan_last_bucket_dynamics],
+    #                      [bambi_first_bucket_dynamics, bambi_last_bucket_dynamics],'events_rate')
+    # plot_compare_average([nitzan_first_bucket_dynamics, nitzan_last_bucket_dynamics],
+    #                      [bambi_first_bucket_dynamics, bambi_last_bucket_dynamics], 'ensamble_correlation')
 
     raw_input('Press enter to quit')
 main()
