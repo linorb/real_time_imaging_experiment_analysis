@@ -15,16 +15,20 @@ from zivlab.analysis.place_cells import find_place_cells, calculate_event_rate_d
 # Number of sessions in all runs in the experiment
 NUMBER_OF_SESSIONS = 5
 BAMBI_NUMBER_OF_TRIALS = 7
-MOUSE = '3'
+MOUSE = '6'
 CAGE = '40'
 
 EDGE_BINS = [1, 2, 3, 9, 10]
 EDGE_PERCENT = 0.9
-
+# For c40m3
 CELL_REGISTRATION_FILENAME = r'Z:\Short term data storage\Data storage (1 year)\Nitzan\c40m3\registration_110_days\cellRegistered_Final_16-Mar-2017_133500.mat'
 
+# For c40m6
+# NITZAN_CELL_REGISTRATION_FILENAME = r'Z:\Short term data storage\Lab members\Nitzan\nov16_data\registration\c40m6\cellRegistered_Final_Joint_0.5.mat'
+# BAMBI_CELL_REGISTRATION_FILNAME = r'Z:\Short term data storage\Data storage (1 year)\experiments\real_time_imaging\c40m6_registered_1202-0309\registration\cellRegistered_Final_20170423_123804.mat'
+
 def  load_cell_registration():
-    #Taken from Or's script
+    #Taken from Or's script - for C40M3
     # Load the cell registration results
     cell_registration = h5py.File(CELL_REGISTRATION_FILENAME)['cell_registered_struct'][
         'optimal_cell_to_index_map'].value.astype(int)
@@ -36,6 +40,21 @@ def  load_cell_registration():
 
     return nitzan_run, bambi_run
 
+# def load_cell_registration():
+#     # For c40m6
+#     # Load the cell registration results
+#     cell_registration = scipy.io.loadmat(NITZAN_CELL_REGISTRATION_FILENAME)['optimal_cell_to_index_map'].astype(int)
+#     # Compensate for 0-based indexing
+#     cell_registration -= 1
+#     nitzan_run = cell_registration[:, :5]
+#
+#     cell_registration = h5py.File(BAMBI_CELL_REGISTRATION_FILNAME)['cell_registered_struct'][
+#         'optimal_cell_to_index_map'].value.astype(int)
+#     cell_registration -= 1
+#     bambi_run = np.transpose(cell_registration[1:6])
+#
+#     return nitzan_run, bambi_run
+
 def extract_nitzans_data():
     """Taken from OR's code dynamic_analysis"""
     full_bins_traces = []
@@ -43,11 +62,13 @@ def extract_nitzans_data():
     frame_logs = []
 
     for i in xrange(NUMBER_OF_SESSIONS):
+        print i
         bins_filename = os.path.join(r'Z:\Short term data storage\Lab members\Nitzan\nov16_data\tracking\Cage%s_Mouse%s' %(CAGE, MOUSE),
                                      'Day%d.mat' % (i + 1,))
         my_mvmt = scipy.io.loadmat(bins_filename)['my_mvmt'][0]
         session_bins_traces = []
         for j in xrange(1, my_mvmt.shape[0]):
+            print j
             # All 3 first indices are magic to get to the required position.
             # The 1: is used to remove the first behavioral frame which is dropped
             # in the neuronal.
@@ -113,7 +134,7 @@ def extract_nitzans_data():
 
             bins_traces[i] = bins_traces[i][:-1]
 
-    print
+
 
     for i in xrange(NUMBER_OF_SESSIONS):
         print 'Number of frames in session %d: %d' % (i, events_traces[i].shape[1])
@@ -218,7 +239,7 @@ def find_edge_cells(bins, events, edge_percent, edge_bins):
     number_of_edge_events = np.sum(events[:, edge_frames_indices], axis=1)
 
     percent_edge_per_neuron = np.divide(number_of_edge_events, number_of_neuron_events)
-    edge_neurons = np.argwhere(percent_edge_per_neuron >= edge_percent)
+    edge_neurons = np.squeeze(np.argwhere(percent_edge_per_neuron >= edge_percent))
 
     return edge_neurons
 
@@ -234,34 +255,247 @@ def renumber_sessions_cells_ID(events_traces, cell_to_index_map):
     cell's ID"""
     global_numbering_events = []
     for i, session in enumerate(events_traces):
-        print session.shape
         global_session = unite_sessions([session], [i], cell_to_index_map)
         global_numbering_events.append(global_session)
 
     return global_numbering_events
 
-
-def recurrence_probability(global_numbering_events, cells_indices):
+def recurrence_probability(global_numbering_events, cells_indices, events_threshold):
     # Calculate recurrence probability. assuming global_numbering_events is a list of events matrices that has global
     # numbering of neurons. and cells_indices are global indices
 
     number_of_sessions = len(global_numbering_events)
-    number_of_events_per_session = []
+    over_threshold_events = []
 
     # Counting number of events per cell per session for the cell indices
     for session in global_numbering_events:
-        number_of_events_per_session.append(np.sum(session[cells_indices, :], axis=1))
+        over_threshold_events.append(np.sum(session[cells_indices, :], axis=1) > events_threshold)
 
 
     # Probabilities
-    p = zeros((number_of_sessions, number_of_sessions))
+    p = np.zeros((number_of_sessions, number_of_sessions))
 
     for i in xrange(number_of_sessions):
         for j in xrange(number_of_sessions):
-            p[i, j] = float(count_nonzero(number_of_events_per_session[i] & number_of_events_per_session[j])) / \
-                      float(count_nonzero(number_of_events_per_session[i]))
+            try:
+                p[i, j] = float(np.count_nonzero(over_threshold_events[i] & over_threshold_events[j])) / \
+                          float(np.count_nonzero(over_threshold_events[i]))
+            except ZeroDivisionError:
+                print "Oops, no events above threshold for session %d" %i
 
     return p
+
+def probabilities_properties(probabilities):
+    diagonals = [diagonal(probabilities, offset=i) for i in xrange(NUMBER_OF_SESSIONS)]
+
+    averages = [mean(d) for d in diagonals]
+    stds = [std(d) for d in diagonals]
+
+    return averages, stds
+
+def count_events_per_session(global_numbering_events, cells_indices):
+    # Calculate the events rate through all sessions
+
+    number_of_sessions = len(global_numbering_events)
+    number_of_events_per_session = np.zeros((len(cells_indices), number_of_sessions))
+
+    # Counting number of events per cell per session for the cell indices
+    for i, session in enumerate(global_numbering_events):
+        number_of_events_per_session[:, i] = np.sum(session[cells_indices, :], axis=1)
+
+    return number_of_events_per_session
+
+def calculate_ensamble_correlation(global_numbering_events, cells_indices):
+    number_of_sessions = len(global_numbering_events)
+    number_of_frames = global_numbering_events[0].shape[1]
+
+    activity_vectors = []
+
+    for session in global_numbering_events:
+        activity_vectors.append(np.sum(session[cells_indices, :], axis=1).astype(float) / number_of_frames)
+
+    rho = np.zeros((number_of_sessions, number_of_sessions))
+    for i in xrange(number_of_sessions):
+        for j in xrange(number_of_sessions):
+            rho[i, j] = np.corrcoef(activity_vectors[i], activity_vectors[j])[0, 1]
+
+    return rho
+
+def analyze_bucket_dynamics_for_data(data):
+    # Calculate recurrence probability, event rate, and ensamble correlation for a data set, given its
+    # global_numbering_events and edge_cells calculated before. for all sessions
+    events_threshold = 5
+    first_bucket_sessions_dynamics = []
+    last_bucket_sessions_dynamics = []
+
+    for session_index in xrange(NUMBER_OF_SESSIONS):
+
+        dynamics = {}
+        edge_cells = data['edge_cells'][session_index]
+        bucket_events = data['global_numbering_bucket']['first']
+
+        dynamics['recurrence'] = recurrence_probability(bucket_events, edge_cells, events_threshold)
+
+        dynamics['ensamble_correlation'] = calculate_ensamble_correlation(bucket_events, edge_cells)
+
+        dynamics['events_rate'] = count_events_per_session(bucket_events, edge_cells)
+        first_bucket_sessions_dynamics.append(dynamics)
+
+        dynamics = {}
+        bucket_events = data['global_numbering_bucket']['last']
+
+        dynamics['recurrence'] = recurrence_probability(bucket_events, edge_cells, events_threshold)
+
+        dynamics['ensamble_correlation'] = calculate_ensamble_correlation(bucket_events, edge_cells)
+
+        dynamics['events_rate'] = count_events_per_session(bucket_events, edge_cells)
+        last_bucket_sessions_dynamics.append(dynamics)
+
+    return first_bucket_sessions_dynamics, last_bucket_sessions_dynamics
+
+def plot_dynamics(first_bucket_sessions_dynamics, last_bucket_sessions_dynamics, name):
+    # plot recurrence
+    f, axx = plt.subplots(5, 1, sharey=True, sharex=True, figsize=(15, 10))
+    f.suptitle('Recurrence Probability ' + name, fontsize=16)
+    f.tight_layout()
+    f.subplots_adjust(top=0.9)
+
+    for i in xrange(NUMBER_OF_SESSIONS):
+        a, s = probabilities_properties(first_bucket_sessions_dynamics[i]['recurrence'])
+        line1 = axx[i].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
+        axx[i].set_title('Session no.%d' %i)
+        a, s = probabilities_properties(last_bucket_sessions_dynamics[i]['recurrence'])
+        line2 = axx[i].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
+        legend((line1, line2), ('first bucket', 'last bucket'))
+    f.show()
+
+    # plot event rate
+    f, axx = plt.subplots(5, 1, sharey=True, sharex=True, figsize=(15, 10))
+    f.suptitle('Event rate ' + name, fontsize=16)
+    f.tight_layout()
+    f.subplots_adjust(top=0.9)
+
+    for i in xrange(NUMBER_OF_SESSIONS):
+        a = mean(first_bucket_sessions_dynamics[i]['events_rate'], axis=0)
+        s = std(first_bucket_sessions_dynamics[i]['events_rate'], axis=0)
+        line1 = axx[i].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
+        axx[i].set_title('Session no.%d' % i)
+        a = mean(last_bucket_sessions_dynamics[i]['events_rate'], axis=0)
+        s = std(last_bucket_sessions_dynamics[i]['events_rate'], axis=0)
+        line2 = axx[i].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
+        legend((line1, line2), ('first bucket', 'last bucket'))
+    f.show()
+
+    # plot ensamble correlation
+    f, axx = plt.subplots(5, 1, sharey=True, sharex=True, figsize=(15, 10))
+    f.suptitle('Ensamble correlation ' + name, fontsize=16)
+    f.tight_layout()
+    f.subplots_adjust(top=0.9)
+
+    for i in xrange(NUMBER_OF_SESSIONS):
+        a, s = probabilities_properties(first_bucket_sessions_dynamics[i]['ensamble_correlation'])
+        line1 = axx[i].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
+        axx[i].set_title('Session no.%d' % i)
+        a, s = probabilities_properties(last_bucket_sessions_dynamics[i]['ensamble_correlation'])
+        line2 = axx[i].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
+        legend((line1, line2), ('first bucket', 'last bucket'))
+
+    f.show()
+
+def average_dynamics(sessions_dynamics, field_name):
+    concatenated_field = []
+    for session in sessions_dynamics:
+        concatenated_field.append(session[field_name])
+    concatenated_field = np.stack(concatenated_field, axis=2)
+    average_field = np.mean(concatenated_field, axis=2)
+
+    return average_field
+
+def plot_average_recurrence(first_bucket_sessions_dynamics, last_bucket_sessions_dynamics, name):
+    # plot recurrence
+
+    first_bucket_average = average_dynamics(first_bucket_sessions_dynamics, 'recurrence')
+    last_bucket_average = average_dynamics(last_bucket_sessions_dynamics, 'recurrence')
+
+    f, axx = plt.subplots(1, 1, sharey=True, sharex=True, figsize=(15, 10))
+    f.suptitle('Recurrence Probability ' + name, fontsize=16)
+    f.tight_layout()
+    f.subplots_adjust(top=0.9)
+
+    a, s = probabilities_properties(first_bucket_average)
+    line1 = axx.errorbar(arange(NUMBER_OF_SESSIONS), a, s)
+    a, s = probabilities_properties(last_bucket_average)
+    line2 = axx.errorbar(arange(NUMBER_OF_SESSIONS), a, s)
+    legend((line1, line2), ('first bucket', 'last bucket'))
+    f.show()
+
+def plot_compare_average(nitzan_bucket_session_dynamics, bambi_bucket_session_dynamics, field_name):
+    # The input dynamics are lists of the first and second dynamics
+    nitzan_average = []
+    bambi_average = []
+
+    if not(field_name == 'events_rate'):
+        for i in np.arange(len(nitzan_bucket_session_dynamics)):
+            nitzan_average.append(average_dynamics(nitzan_bucket_session_dynamics[i], field_name))
+            bambi_average.append(average_dynamics(bambi_bucket_session_dynamics[i], field_name))
+
+        nitzan_average = np.mean(np.stack(nitzan_average, axis=2), axis=2)
+        bambi_average = np.mean(np.stack(bambi_average, axis=2), axis=2)
+        f, axx = plt.subplots(1, 1, sharey=True, sharex=True, figsize=(15, 10))
+        f.suptitle(field_name, fontsize=16)
+        f.tight_layout()
+        f.subplots_adjust(top=0.9)
+        a, s = probabilities_properties(nitzan_average)
+        line1 = axx.errorbar(arange(NUMBER_OF_SESSIONS), a, s)
+        a, s = probabilities_properties(bambi_average)
+        line2 = axx.errorbar(arange(NUMBER_OF_SESSIONS), a, s)
+        legend((line1, line2), ('nitzan', 'bambi'))
+
+    else:
+        nitzan_concatenated_field = []
+        bambi_concatenated_field = []
+        nitzan_number_of_cells = []
+        bambi_number_of_cells = []
+        for i in np.arange(len(nitzan_bucket_session_dynamics)):
+            sessions_dynamics = nitzan_bucket_session_dynamics[i]
+            for session in sessions_dynamics:
+                nitzan_concatenated_field.append(session[field_name])
+                nitzan_number_of_cells.append(session[field_name].shape[0])
+
+            sessions_dynamics = bambi_bucket_session_dynamics[i]
+            for session in sessions_dynamics:
+                bambi_concatenated_field.append(session[field_name])
+                bambi_number_of_cells.append(session[field_name].shape[0])
+
+        nitzan_concatenated_field = np.vstack(nitzan_concatenated_field)
+        bambi_concatenated_field = np.vstack(bambi_concatenated_field)
+        nitzan_average = np.mean(nitzan_concatenated_field, axis=0)
+        bambi_average = np.mean(bambi_concatenated_field, axis = 0)
+        nitzan_std = np.std(nitzan_concatenated_field, axis=0)
+        bambi_std = np.std(bambi_concatenated_field, axis=0)
+
+        nitzan_concatenated_field[nitzan_concatenated_field == 0]= nan
+        bambi_concatenated_field[bambi_concatenated_field == 0] = nan
+        nitzan_no_zeros_average = np.nanmean(nitzan_concatenated_field, axis=0)
+        bambi_no_zeros_average = np.nanmean(bambi_concatenated_field, axis=0)
+        nitzan_no_zeros_std = np.nanstd(nitzan_concatenated_field, axis=0)
+        bambi_no_zeros_std = np.nanstd(bambi_concatenated_field, axis=0)
+
+        f, axx = plt.subplots(3, 1, sharey=True, sharex=True, figsize=(15, 10))
+        f.suptitle(field_name, fontsize=16)
+        f.tight_layout()
+        f.subplots_adjust(top=0.9)
+        line1 = axx[0].errorbar(arange(NUMBER_OF_SESSIONS), nitzan_average, nitzan_std)
+        line2 = axx[0].errorbar(arange(NUMBER_OF_SESSIONS), bambi_average, bambi_std)
+        line3 = axx[1].errorbar(arange(NUMBER_OF_SESSIONS), nitzan_no_zeros_average, nitzan_no_zeros_std)
+        line4 = axx[1].errorbar(arange(NUMBER_OF_SESSIONS), bambi_no_zeros_average, bambi_no_zeros_std)
+        line5 = axx[2].plot(arange(NUMBER_OF_SESSIONS), nitzan_number_of_cells[:5])
+        line6 = axx[2].plot(arange(NUMBER_OF_SESSIONS), bambi_number_of_cells[:5])
+        legend((line1, line2, line3, line4, line5, line6), ('nitzan - all', 'bambi - all', 'nitzan - no zeros',
+                                              'nitzan - no zeros', 'nitzan - number of edge cells',
+                                              'bambi - number pf edge cells'))
+
+    f.show()
 
 def main():
     data = {'nitzan': {},
@@ -306,8 +540,20 @@ def main():
                                                                     data['bambi']['global_numbering_events'],
                                                                     EDGE_PERCENT, EDGE_BINS)
 
+    # Calculate recurrence probability, event rate, and ensamble correlation
+    [nitzan_first_bucket_dynamics, nitzan_last_bucket_dynamics] = analyze_bucket_dynamics_for_data(data['nitzan'])
+    [bambi_first_bucket_dynamics, bambi_last_bucket_dynamics] = analyze_bucket_dynamics_for_data(data['bambi'])
 
-    #
+    # plot_dynamics(nitzan_first_bucket_dynamics, nitzan_last_bucket_dynamics, 'Nitzan')
+    # plot_dynamics(bambi_first_bucket_dynamics, bambi_last_bucket_dynamics, 'Bambi')
 
+    plot_average_recurrence(nitzan_first_bucket_dynamics, nitzan_last_bucket_dynamics, 'Nitzan')
+    plot_average_recurrence(bambi_first_bucket_dynamics, bambi_last_bucket_dynamics, 'Bambi')
 
+    plot_compare_average([nitzan_first_bucket_dynamics, nitzan_last_bucket_dynamics],
+                         [bambi_first_bucket_dynamics, bambi_last_bucket_dynamics],'events_rate')
+    plot_compare_average([nitzan_first_bucket_dynamics, nitzan_last_bucket_dynamics],
+                         [bambi_first_bucket_dynamics, bambi_last_bucket_dynamics], 'ensamble_correlation')
+
+    raw_input('Press enter to quit')
 main()
