@@ -340,7 +340,7 @@ def calculate_ensamble_correlation(global_numbering_events, cells_indices):
 
     return rho
 
-def analyze_bucket_dynamics_for_data(data):
+def analyze_bucket_dynamics_for_edge(data):
     # Calculate recurrence probability, event rate, and ensamble correlation for a data set, given its
     # global_numbering_events and edge_cells calculated before. for all sessions
     events_threshold = 5
@@ -368,6 +368,43 @@ def analyze_bucket_dynamics_for_data(data):
         dynamics['ensamble_correlation'] = calculate_ensamble_correlation(bucket_events, edge_cells)
 
         dynamics['events_rate'] = count_events_per_session(bucket_events, edge_cells)
+        last_bucket_sessions_dynamics.append(dynamics)
+
+    return first_bucket_sessions_dynamics, last_bucket_sessions_dynamics
+
+def analyze_bucket_dynamics_for_non_edge(data):
+    # Calculate recurrence probability, event rate, and ensamble correlation for a data set, given its
+    # global_numbering_events and edge_cells calculated before. for all sessions
+    events_threshold = 5
+    first_bucket_sessions_dynamics = []
+    last_bucket_sessions_dynamics = []
+    number_of_neurons = data['global_numbering_bucket']['first'][0].shape[0]
+
+    for session_index in xrange(NUMBER_OF_SESSIONS):
+        dynamics = {}
+        edge_cells = data['edge_cells'][session_index]
+        all_neurons_indexing = np.arange(number_of_neurons)
+        non_edge_cells = all_neurons_indexing
+        non_edge_cells[edge_cells] = 0
+        non_edge_cells = non_edge_cells[non_edge_cells > 0]
+
+        bucket_events = data['global_numbering_bucket']['first']
+
+        dynamics['recurrence'] = recurrence_probability(bucket_events, non_edge_cells, events_threshold)
+
+        dynamics['ensamble_correlation'] = calculate_ensamble_correlation(bucket_events, non_edge_cells)
+
+        dynamics['events_rate'] = count_events_per_session(bucket_events, non_edge_cells)
+        first_bucket_sessions_dynamics.append(dynamics)
+
+        dynamics = {}
+        bucket_events = data['global_numbering_bucket']['last']
+
+        dynamics['recurrence'] = recurrence_probability(bucket_events, non_edge_cells, events_threshold)
+
+        dynamics['ensamble_correlation'] = calculate_ensamble_correlation(bucket_events, non_edge_cells)
+
+        dynamics['events_rate'] = count_events_per_session(bucket_events, non_edge_cells)
         last_bucket_sessions_dynamics.append(dynamics)
 
     return first_bucket_sessions_dynamics, last_bucket_sessions_dynamics
@@ -559,13 +596,13 @@ def main():
                                                                     data['bambi']['global_numbering_events'],
                                                                     EDGE_PERCENT, EDGE_BINS)
 
-    # Calculate recurrence probability, event rate, and ensamble correlation
-    [nitzan_first_bucket_dynamics, nitzan_last_bucket_dynamics] = analyze_bucket_dynamics_for_data(data['nitzan'])
-    [bambi_first_bucket_dynamics, bambi_last_bucket_dynamics] = analyze_bucket_dynamics_for_data(data['bambi'])
-
-    plot_dynamics(nitzan_first_bucket_dynamics, nitzan_last_bucket_dynamics, 'Nitzan')
-    plot_dynamics(bambi_first_bucket_dynamics, bambi_last_bucket_dynamics, 'Bambi')
-
+    # Calculate recurrence probability, event rate, and ensamble correlation for edge cells
+    # [nitzan_first_bucket_dynamics, nitzan_last_bucket_dynamics] = analyze_bucket_dynamics_for_edge(data['nitzan'])
+    # [bambi_first_bucket_dynamics, bambi_last_bucket_dynamics] = analyze_bucket_dynamics_for_edge(data['bambi'])
+    #
+    # plot_dynamics(nitzan_first_bucket_dynamics, nitzan_last_bucket_dynamics, 'Nitzan')
+    # plot_dynamics(bambi_first_bucket_dynamics, bambi_last_bucket_dynamics, 'Bambi')
+    #
     # plot_average_recurrence(nitzan_first_bucket_dynamics, nitzan_last_bucket_dynamics, 'Nitzan')
     # plot_average_recurrence(bambi_first_bucket_dynamics, bambi_last_bucket_dynamics, 'Bambi')
     #
@@ -573,6 +610,21 @@ def main():
     #                      [bambi_first_bucket_dynamics, bambi_last_bucket_dynamics],'events_rate')
     # plot_compare_average([nitzan_first_bucket_dynamics, nitzan_last_bucket_dynamics],
     #                      [bambi_first_bucket_dynamics, bambi_last_bucket_dynamics], 'ensamble_correlation')
+
+    # Calculate recurrence probability, event rate, and ensamble correlation for non edge cells
+    [nitzan_first_bucket_dynamics, nitzan_last_bucket_dynamics] = analyze_bucket_dynamics_for_non_edge(data['nitzan'])
+    [bambi_first_bucket_dynamics, bambi_last_bucket_dynamics] = analyze_bucket_dynamics_for_non_edge(data['bambi'])
+
+    plot_dynamics(nitzan_first_bucket_dynamics, nitzan_last_bucket_dynamics, 'Nitzan')
+    plot_dynamics(bambi_first_bucket_dynamics, bambi_last_bucket_dynamics, 'Bambi')
+
+    plot_average_recurrence(nitzan_first_bucket_dynamics, nitzan_last_bucket_dynamics, 'Nitzan')
+    plot_average_recurrence(bambi_first_bucket_dynamics, bambi_last_bucket_dynamics, 'Bambi')
+
+    plot_compare_average([nitzan_first_bucket_dynamics, nitzan_last_bucket_dynamics],
+                         [bambi_first_bucket_dynamics, bambi_last_bucket_dynamics], 'events_rate')
+    plot_compare_average([nitzan_first_bucket_dynamics, nitzan_last_bucket_dynamics],
+                         [bambi_first_bucket_dynamics, bambi_last_bucket_dynamics], 'ensamble_correlation')
 
     raw_input('Press enter to quit')
 main()
