@@ -469,7 +469,7 @@ def plot_dynamics(first_bucket_sessions_dynamics, last_bucket_sessions_dynamics,
 
     # plot event rate
     f, axx = plt.subplots(5, 1, sharey=True, sharex=True, figsize=(15, 10))
-    f.suptitle('Event rate ' + name, fontsize=16)
+    f.suptitle('Event rate ' + name, fontsize=14)
     f.tight_layout()
     f.subplots_adjust(top=0.9)
 
@@ -486,7 +486,7 @@ def plot_dynamics(first_bucket_sessions_dynamics, last_bucket_sessions_dynamics,
 
     # plot ensamble correlation
     f, axx = plt.subplots(5, 1, sharey=True, sharex=True, figsize=(15, 10))
-    f.suptitle('Ensamble correlation ' + name, fontsize=16)
+    f.suptitle('Ensamble correlation ' + name, fontsize=14)
     f.tight_layout()
     f.subplots_adjust(top=0.9)
 
@@ -516,7 +516,7 @@ def plot_average_recurrence(first_bucket_sessions_dynamics, last_bucket_sessions
     last_bucket_average = average_dynamics(last_bucket_sessions_dynamics, 'recurrence')
 
     f, axx = plt.subplots(1, 1, sharey=True, sharex=True, figsize=(15, 10))
-    f.suptitle('Recurrence Probability ' + name, fontsize=16)
+    f.suptitle('Recurrence Probability ' + name, fontsize=14)
     f.tight_layout()
     f.subplots_adjust(top=0.9)
 
@@ -540,7 +540,7 @@ def plot_compare_average(nitzan_bucket_session_dynamics, bambi_bucket_session_dy
         nitzan_average = np.mean(np.stack(nitzan_average, axis=2), axis=2)
         bambi_average = np.mean(np.stack(bambi_average, axis=2), axis=2)
         f, axx = plt.subplots(1, 1, sharey=True, sharex=True, figsize=(15, 10))
-        f.suptitle(field_name, fontsize=16)
+        f.suptitle(field_name, fontsize=14)
         f.tight_layout()
         f.subplots_adjust(top=0.9)
         a, s = probabilities_properties(nitzan_average)
@@ -549,7 +549,7 @@ def plot_compare_average(nitzan_bucket_session_dynamics, bambi_bucket_session_dy
         line2 = axx.errorbar(arange(NUMBER_OF_SESSIONS), a, s)
         legend((line1, line2), ('nitzan', 'bambi'))
 
-    else:
+    else: # field_name == 'events_rate'
         nitzan_concatenated_field = []
         bambi_concatenated_field = []
         nitzan_number_of_cells = []
