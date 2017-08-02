@@ -9,7 +9,7 @@ from seaborn import *
 import h5py
 import scipy.io
 
-from real_time_imaging.tools.activity_loading import unite_sessions
+from bambi.tools.activity_loading import unite_sessions
 from zivlab.analysis.place_cells import find_place_cells, calculate_event_rate_distribution
 
 # Number of sessions in all runs in the experiment
