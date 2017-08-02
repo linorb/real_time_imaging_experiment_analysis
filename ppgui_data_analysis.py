@@ -24,36 +24,35 @@ EDGE_PERCENT = 0.9
 CELL_REGISTRATION_FILENAME = r'Z:\Short term data storage\Data storage (1 year)\Nitzan\c40m3\registration_110_days\cellRegistered_Final_16-Mar-2017_133500.mat'
 
 # For c40m6
-# NITZAN_CELL_REGISTRATION_FILENAME = r'Z:\Short term data storage\Lab members\Nitzan\nov16_data\registration\c40m6\cellRegistered_Final_Joint_0.5.mat'
-# BAMBI_CELL_REGISTRATION_FILNAME = r'Z:\Short term data storage\Data storage (1 year)\experiments\real_time_imaging\c40m6_registered_1202-0309\registration\cellRegistered_Final_20170423_123804.mat'
+NITZAN_CELL_REGISTRATION_FILENAME = r'D:\dev\replays\work_data\recall\c40m6\cellRegistered_linear.mat'
+BAMBI_CELL_REGISTRATION_FILNAME = r'Z:\Short term data storage\Data storage (1 year)\experiments\real_time_imaging\c40m6_registered_1202-0309\registration\cellRegistered_Final_20170423_123804.mat'
 
 def  load_cell_registration():
     #Taken from Or's script - for C40M3
     # Load the cell registration results
-    cell_registration = h5py.File(CELL_REGISTRATION_FILENAME)['cell_registered_struct'][
-        'optimal_cell_to_index_map'].value.astype(int)
-    # Compensate for 0-based indexing
-    cell_registration -= 1
+    if MOUSE == '3':
+        cell_registration = h5py.File(CELL_REGISTRATION_FILENAME)['cell_registered_struct'][
+            'optimal_cell_to_index_map'].value.astype(int)
+        # Compensate for 0-based indexing
+        cell_registration -= 1
 
-    nitzan_run = np.transpose(cell_registration[:5])
-    bambi_run = np.transpose(cell_registration[-5:])
+        nitzan_run = np.transpose(cell_registration[:5])
+        bambi_run = np.transpose(cell_registration[-5:])
+    elif MOUSE == '6':
+        # Load the cell registration results
+        cell_registration = scipy.io.loadmat(NITZAN_CELL_REGISTRATION_FILENAME)[
+            'optimal_cell_to_index_map'].astype(int)
+        # Compensate for 0-based indexing
+        cell_registration -= 1
+        nitzan_run = cell_registration[:, :5]
+
+        cell_registration = \
+        h5py.File(BAMBI_CELL_REGISTRATION_FILNAME)['cell_registered_struct'][
+            'optimal_cell_to_index_map'].value.astype(int)
+        cell_registration -= 1
+        bambi_run = np.transpose(cell_registration[1:6])
 
     return nitzan_run, bambi_run
-
-# def load_cell_registration():
-#     # For c40m6
-#     # Load the cell registration results
-#     cell_registration = scipy.io.loadmat(NITZAN_CELL_REGISTRATION_FILENAME)['optimal_cell_to_index_map'].astype(int)
-#     # Compensate for 0-based indexing
-#     cell_registration -= 1
-#     nitzan_run = cell_registration[:, :5]
-#
-#     cell_registration = h5py.File(BAMBI_CELL_REGISTRATION_FILNAME)['cell_registered_struct'][
-#         'optimal_cell_to_index_map'].value.astype(int)
-#     cell_registration -= 1
-#     bambi_run = np.transpose(cell_registration[1:6])
-#
-#     return nitzan_run, bambi_run
 
 def extract_nitzans_data():
     """Taken from OR's code dynamic_analysis"""
@@ -130,7 +129,8 @@ def extract_nitzans_data():
     bins_traces = []
     fixed_bins_traces = full_bins_traces[:]
     # For c40m3 do this correction:
-    fixed_bins_traces[4] = fixed_bins_traces[4][:2] + fixed_bins_traces[4][3:]
+    if MOUSE == '3':
+        fixed_bins_traces[4] = fixed_bins_traces[4][:2] + fixed_bins_traces[4][3:]
     for i in xrange(NUMBER_OF_SESSIONS):
         bins_trace = []
         for j in xrange(len(fixed_bins_traces[i])):
@@ -627,4 +627,6 @@ def main():
                          [bambi_first_bucket_dynamics, bambi_last_bucket_dynamics], 'ensamble_correlation')
 
     raw_input('Press enter to quit')
-main()
+
+if __name__ == '__main__':
+    main()
