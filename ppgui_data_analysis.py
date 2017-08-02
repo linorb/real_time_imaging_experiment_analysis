@@ -340,9 +340,10 @@ def calculate_ensamble_correlation(global_numbering_events, cells_indices):
 
     return rho
 
-def analyze_bucket_dynamics_for_edge(data):
+def analyze_and_separate_bucket_dynamics_for_edge(data):
     # Calculate recurrence probability, event rate, and ensamble correlation for a data set, given its
     # global_numbering_events and edge_cells calculated before. for all sessions
+    # with separating between first and last bucket trials
     events_threshold = 5
     first_bucket_sessions_dynamics = []
     last_bucket_sessions_dynamics = []
@@ -371,6 +372,47 @@ def analyze_bucket_dynamics_for_edge(data):
         last_bucket_sessions_dynamics.append(dynamics)
 
     return first_bucket_sessions_dynamics, last_bucket_sessions_dynamics
+
+def analyze_bucket_dynamics(data, cell_type):
+    # Calculate recurrence probability, event rate, and ensamble correlation for
+    # a data set, given its global_numbering_events and edge_cells calculated
+    # before. for all sessions cell_type is either: 'edge_cells' or
+    # 'non_edge_cells'
+    events_threshold = 5
+    bucket_sessions_dynamics = []
+    number_of_neurons = data['global_numbering_bucket']['first'][0].shape[0]
+
+    for session_index in xrange(NUMBER_OF_SESSIONS):
+
+        dynamics = {}
+        if cell_type == 'edge_cells':
+            cells_indices = data[cell_type][session_index]
+        elif cell_type == 'non_edge_cells':
+            edge_cells = data['edge_cells'][session_index]
+            all_neurons_indexing = np.arange(number_of_neurons)
+            non_edge_cells = all_neurons_indexing
+            non_edge_cells[edge_cells] = 0
+            cells_indices = non_edge_cells[non_edge_cells > 0]
+
+        bucket_events = []
+        for i, first_bucket_trial in enumerate(data['global_numbering_bucket']['first']):
+            last_bucket_trial = data['global_numbering_bucket']['last'][i]
+            session_bucket_trials = np.hstack(
+                [first_bucket_trial, last_bucket_trial])
+            bucket_events.append(session_bucket_trials)
+
+        dynamics['recurrence'] = recurrence_probability\
+            (bucket_events, cells_indices, events_threshold)
+
+        dynamics['ensamble_correlation'] = calculate_ensamble_correlation\
+            (bucket_events, cells_indices)
+
+        dynamics['events_rate'] = count_events_per_session\
+            (bucket_events, cells_indices)
+        bucket_sessions_dynamics.append(dynamics)
+
+    return bucket_sessions_dynamics
+
 
 def analyze_bucket_dynamics_for_non_edge(data):
     # Calculate recurrence probability, event rate, and ensamble correlation for a data set, given its
@@ -412,7 +454,7 @@ def analyze_bucket_dynamics_for_non_edge(data):
 def plot_dynamics(first_bucket_sessions_dynamics, last_bucket_sessions_dynamics, name):
     # plot recurrence
     f, axx = plt.subplots(5, 1, sharey=True, sharex=True, figsize=(15, 10))
-    f.suptitle('Recurrence Probability ' + name, fontsize=16)
+    f.suptitle('Recurrence Probability ' + name, fontsize=14)
     f.tight_layout()
     f.subplots_adjust(top=0.9)
 
