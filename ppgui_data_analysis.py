@@ -606,7 +606,7 @@ def plot_all_bucket_dynamics(data):
     bambi_bucket_dynamics_non_edge = \
         analyze_bucket_dynamics(data['bambi'], 'non_edge_cells')
 
-    f, axx = subplots(4, 2, sharey='row', sharex='row')
+    f, axx = subplots(3, 2, sharey='row', sharex='row')
     f.subplots_adjust(top=0.9)
     ###### plot recurrence ######
     # For edge cells
@@ -694,10 +694,7 @@ def plot_all_bucket_dynamics(data):
                        bambi_std_edge_event_rate)
     axx[2, 0].set_ylabel('Number of events', fontsize=14)
     axx[2, 0].set_xlabel('Session number', fontsize=14)
-    axx[3, 0].plot(arange(NUMBER_OF_SESSIONS), nitzan_number_of_cells[:5])
-    axx[3, 0].plot(arange(NUMBER_OF_SESSIONS), bambi_number_of_cells[:5])
-    axx[3, 0].set_ylabel('Number of cells', fontsize=14)
-    axx[3, 0].set_xlabel('Session number', fontsize=14)
+
     # For non edge cells
     nitzan_non_edge_event_rate = []
     nitzan_number_of_cells = []
@@ -730,12 +727,9 @@ def plot_all_bucket_dynamics(data):
                        bambi_average_non_edge_event_rate,
                        bambi_std_non_edge_event_rate)
     axx[2, 1].set_xlabel('Session number', fontsize=14)
-    axx[3, 1].plot(arange(NUMBER_OF_SESSIONS), nitzan_number_of_cells[:5])
-    axx[3, 1].plot(arange(NUMBER_OF_SESSIONS), bambi_number_of_cells[:5])
-    axx[3, 1].set_xlabel('Session number', fontsize=14)
 
     setp(axx, xticks=range(5), xticklabels=['1', '2', '3', '4', '5'])
-    for i in range(4):
+    for i in range(3):
         for j in range(2):
             for xtick in axx[i, j].xaxis.get_major_ticks():
                 xtick.label.set_fontsize(14)
@@ -758,7 +752,7 @@ def plot_all_track_dynamics(data): ##### EDIT THIS ####
     bambi_bucket_dynamics_non_edge = \
         analyze_bucket_dynamics(data['bambi'], 'non_edge_cells')
 
-    f, axx = subplots(4, 2, sharey='row', sharex='row')
+    f, axx = subplots(3, 2, sharey='row', sharex='row')
     f.subplots_adjust(top=0.9)
     ###### plot recurrence ######
     # For edge cells
@@ -846,10 +840,7 @@ def plot_all_track_dynamics(data): ##### EDIT THIS ####
                        bambi_std_edge_event_rate)
     axx[2, 0].set_ylabel('Number of events', fontsize=14)
     axx[2, 0].set_xlabel('Session number', fontsize=14)
-    axx[3, 0].plot(arange(NUMBER_OF_SESSIONS), nitzan_number_of_cells[:5])
-    axx[3, 0].plot(arange(NUMBER_OF_SESSIONS), bambi_number_of_cells[:5])
-    axx[3, 0].set_ylabel('Number of cells', fontsize=14)
-    axx[3, 0].set_xlabel('Session number', fontsize=14)
+
     # For non edge cells
     nitzan_non_edge_event_rate = []
     nitzan_number_of_cells = []
@@ -882,12 +873,9 @@ def plot_all_track_dynamics(data): ##### EDIT THIS ####
                        bambi_average_non_edge_event_rate,
                        bambi_std_non_edge_event_rate)
     axx[2, 1].set_xlabel('Session number', fontsize=14)
-    axx[3, 1].plot(arange(NUMBER_OF_SESSIONS), nitzan_number_of_cells[:5])
-    axx[3, 1].plot(arange(NUMBER_OF_SESSIONS), bambi_number_of_cells[:5])
-    axx[3, 1].set_xlabel('Session number', fontsize=14)
 
     setp(axx, xticks=range(5), xticklabels=['1', '2', '3', '4', '5'])
-    for i in range(4):
+    for i in range(3):
         for j in range(2):
             for xtick in axx[i, j].xaxis.get_major_ticks():
                 xtick.label.set_fontsize(14)
