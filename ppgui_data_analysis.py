@@ -579,19 +579,22 @@ def plot_compare_average(nitzan_bucket_session_dynamics, bambi_bucket_session_dy
         nitzan_no_zeros_std = np.nanstd(nitzan_concatenated_field, axis=0)
         bambi_no_zeros_std = np.nanstd(bambi_concatenated_field, axis=0)
 
-        f, axx = plt.subplots(3, 1, sharey=True, sharex=True, figsize=(15, 10))
-        f.suptitle(field_name, fontsize=16)
+        f, axx = plt.subplots(3, 1, sharex=True, figsize=(15, 10))
+        f.suptitle(field_name, fontsize=14)
         f.tight_layout()
         f.subplots_adjust(top=0.9)
         line1 = axx[0].errorbar(arange(NUMBER_OF_SESSIONS), nitzan_average, nitzan_std)
         line2 = axx[0].errorbar(arange(NUMBER_OF_SESSIONS), bambi_average, bambi_std)
+        axx[0].set_title('Average of events number')
         line3 = axx[1].errorbar(arange(NUMBER_OF_SESSIONS), nitzan_no_zeros_average, nitzan_no_zeros_std)
         line4 = axx[1].errorbar(arange(NUMBER_OF_SESSIONS), bambi_no_zeros_average, bambi_no_zeros_std)
+        axx[1].set_title('Average of events number (no zeros)')
         line5 = axx[2].plot(arange(NUMBER_OF_SESSIONS), nitzan_number_of_cells[:5])
         line6 = axx[2].plot(arange(NUMBER_OF_SESSIONS), bambi_number_of_cells[:5])
-        legend((line1, line2, line3, line4, line5, line6), ('nitzan - all', 'bambi - all', 'nitzan - no zeros',
-                                              'nitzan - no zeros', 'nitzan - number of edge cells',
-                                              'bambi - number pf edge cells'))
+        axx[2].set_title('Number of cells')
+        legend((line1, line2), ('nitzan', 'bambi'))
+
+    f.show()
 
     f.show()
 
