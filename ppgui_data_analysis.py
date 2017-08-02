@@ -18,7 +18,7 @@ BAMBI_NUMBER_OF_TRIALS = 7
 MOUSE = '3'
 CAGE = '40'
 
-EDGE_BINS = [1, 2, 3, 9, 10]
+EDGE_BINS = [0, 1, 10, 11]
 EDGE_PERCENT = 0.9
 # For c40m3
 CELL_REGISTRATION_FILENAME = r'Z:\Short term data storage\Data storage (1 year)\Nitzan\c40m3\registration_110_days\cellRegistered_Final_16-Mar-2017_133500.mat'
