@@ -556,14 +556,14 @@ def plot_compare_average(nitzan_bucket_session_dynamics, bambi_bucket_session_dy
         bambi_number_of_cells = []
         for i in np.arange(len(nitzan_bucket_session_dynamics)):
             sessions_dynamics = nitzan_bucket_session_dynamics[i]
-            for session in sessions_dynamics:
+            for j, session in enumerate(sessions_dynamics):
                 nitzan_concatenated_field.append(session[field_name])
-                nitzan_number_of_cells.append(session[field_name].shape[0])
+                nitzan_number_of_cells.append(np.count_nonzero(session[field_name][:, j]))
 
             sessions_dynamics = bambi_bucket_session_dynamics[i]
-            for session in sessions_dynamics:
+            for j, session in enumerate(sessions_dynamics):
                 bambi_concatenated_field.append(session[field_name])
-                bambi_number_of_cells.append(session[field_name].shape[0])
+                bambi_number_of_cells.append(np.count_nonzero(session[field_name][:, j]))
 
         nitzan_concatenated_field = np.vstack(nitzan_concatenated_field)
         bambi_concatenated_field = np.vstack(bambi_concatenated_field)
