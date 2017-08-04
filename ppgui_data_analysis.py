@@ -10,27 +10,36 @@ import h5py
 import scipy.io
 
 from bambi.tools.activity_loading import unite_sessions
-from zivlab.analysis.place_cells import find_place_cells, calculate_event_rate_distribution
+from zivlab.analysis.place_cells import find_place_cells, \
+    calculate_event_rate_distribution
 
 # Number of sessions in all runs in the experiment
 NUMBER_OF_SESSIONS = 5
 BAMBI_NUMBER_OF_TRIALS = 7
-MOUSE = '6'
+MOUSE = '3'
 CAGE = '40'
+ROIS_INDICES = {}
 
 EDGE_BINS = [0, 1, 10, 11]
 EDGE_PERCENT = 0.9
 # For c40m3
 CELL_REGISTRATION_FILENAME = r'Z:\Short term data storage\Data storage (1 year)\Nitzan\c40m3\registration_110_days\cellRegistered_Final_16-Mar-2017_133500.mat'
+ROIS_INDICES['3'] = [36, 53, 80, 89, 158, 181, 195, 229, 258, 290, 321, 336,
+                     339, 357, 366, 392, 394, 399, 408, 439, 446, 448, 449,
+                     465, 490]
 
 # For c40m6
 NITZAN_CELL_REGISTRATION_FILENAME = r'D:\dev\replays\work_data\recall\c40m6\cellRegistered_linear.mat'
 BAMBI_CELL_REGISTRATION_FILNAME = r'Z:\Short term data storage\Data storage (1 year)\experiments\real_time_imaging\c40m6_registered_1202-0309\registration\cellRegistered_Final_20170423_123804.mat'
+ROIS_INDICES['6'] = [44, 61, 78, 96, 154, 157, 172, 195, 214, 226, 244, 247,
+                     259, 261, 262, 286, 287, 290, 301, 303, 314, 337, 340,
+                     346, 348, 368, 372, 374, 383, 389, 391, 407, 415, 418,
+                     419, 448, 448, 460, 472, 473, 474, 479, 488, 501, 517, 569]
 
-def  load_cell_registration():
+def  load_cell_registration(mouse):
     #Taken from Or's script - for C40M3
     # Load the cell registration results
-    if MOUSE == '3':
+    if mouse == '3':
         cell_registration = h5py.File(CELL_REGISTRATION_FILENAME)['cell_registered_struct'][
             'optimal_cell_to_index_map'].value.astype(int)
         # Compensate for 0-based indexing
@@ -38,7 +47,15 @@ def  load_cell_registration():
 
         nitzan_run = np.transpose(cell_registration[:5])
         bambi_run = np.transpose(cell_registration[-5:])
-    elif MOUSE == '6':
+
+        # Find the global numbering of the ROIs:
+        session_neurons_indices = np.transpose(cell_registration[7])
+        global_numbering_roi = np.zeros(len(ROIS_INDICES['3']), dtype=int)
+        for i, cell_index in enumerate(ROIS_INDICES['3']):
+            global_numbering_roi[i] = \
+                np.argwhere(session_neurons_indices == cell_index)
+
+    elif mouse == '6':
         # Load the cell registration results
         cell_registration = scipy.io.loadmat(NITZAN_CELL_REGISTRATION_FILENAME)[
             'optimal_cell_to_index_map'].astype(int)
@@ -52,21 +69,30 @@ def  load_cell_registration():
         cell_registration -= 1
         bambi_run = np.transpose(cell_registration[1:6])
 
-    return nitzan_run, bambi_run
+        # Find the global numbering of the ROIs:
+        session_neurons_indices = cell_registration[0]
+        global_numbering_roi = np.zeros(len(ROIS_INDICES['6']), dtype=int)
+        for i, cell_index in enumerate(ROIS_INDICES['6']):
+            global_numbering_roi[i] = \
+                np.argwhere(session_neurons_indices == cell_index)
 
-def extract_nitzans_data():
+    return nitzan_run, bambi_run, global_numbering_roi
+
+def extract_nitzans_data(cage, mouse):
     """Taken from OR's code dynamic_analysis"""
     full_bins_traces = []
+    full_velocity_traces = []
     full_events_traces = []
     frame_logs = []
     missing_trials = []
 
     for i in xrange(NUMBER_OF_SESSIONS):
         print i
-        bins_filename = os.path.join(r'Z:\Short term data storage\Lab members\Nitzan\nov16_data\tracking\Cage%s_Mouse%s' %(CAGE, MOUSE),
+        bins_filename = os.path.join(r'Z:\Short term data storage\Lab members\Nitzan\nov16_data\tracking\Cage%s_Mouse%s' %(cage, mouse),
                                      'Day%d.mat' % (i + 1,))
         my_mvmt = scipy.io.loadmat(bins_filename)['my_mvmt'][0]
         session_bins_traces = []
+        session_velocity_traces = []
         for j in xrange(1, my_mvmt.shape[0]):
             print j
             # All 3 first indices are magic to get to the required position.
@@ -74,11 +100,13 @@ def extract_nitzans_data():
             # in the neuronal.
             try:
                 session_bins_traces.append(my_mvmt[j][0][0][3][1:].T[0])
+                session_velocity_traces.append(my_mvmt[j][0][0][4][1:].T[0])
             except IndexError:
                 missing_trials.append([i,j])
         full_bins_traces.append(session_bins_traces)
+        full_velocity_traces.append(session_velocity_traces)
 
-        events_filename = os.path.join(r'Z:\Short term data storage\Lab members\Nitzan\nov16_data\Pre_processing\c%sm%s' %(CAGE, MOUSE),
+        events_filename = os.path.join(r'Z:\Short term data storage\Lab members\Nitzan\nov16_data\Pre_processing\c%sm%s' %(cage, mouse),
                                        'day%d' % (i + 1,),
                                        'linear',
                                        'finalResults',
@@ -86,7 +114,7 @@ def extract_nitzans_data():
         allEventsMat = scipy.io.loadmat(events_filename)['allEventsMat'].T
         full_events_traces.append(allEventsMat)
 
-        frame_log_filename = os.path.join(r'Z:\Short term data storage\Lab members\Nitzan\nov16_data\Pre_processing\c%sm%s' %(CAGE, MOUSE),
+        frame_log_filename = os.path.join(r'Z:\Short term data storage\Lab members\Nitzan\nov16_data\Pre_processing\c%sm%s' %(cage, mouse),
                                           'day%d' % (i + 1,),
                                           'linear',
                                           'finalResults',
@@ -105,85 +133,108 @@ def extract_nitzans_data():
     for i in xrange(NUMBER_OF_SESSIONS):
         # The second index in frame_logs is for taking only the linear trials indices
         if len(missing_trials) == 0:
-            events_traces.append(full_events_traces[i][:, frame_logs[i][1][0]:frame_logs[i][-1][0]])
+            events_traces.append(full_events_traces[i][:,
+                                 frame_logs[i][1][0]:frame_logs[i][-1][0]])
         else:
             missing_trials = np.array(missing_trials)
             if i in missing_trials[:, 0]:
                 linear_trials =  []
-                missing_session_trials = missing_trials[missing_trials[:, 0] == i, 1]
+                missing_session_trials = missing_trials\
+                    [missing_trials[:, 0] == i, 1]
                 number_of_trials = len(frame_logs[i])
                 for j in range(1, number_of_trials-1):
                     if not(j in missing_session_trials):
-                        linear_trials.append(full_events_traces[i][:, frame_logs[i][j][0]:frame_logs[i][j][1]])
+                        linear_trials.append(full_events_traces[i]\
+                                 [:, frame_logs[i][j][0]:frame_logs[i][j][1]])
                 linear_trials = np.concatenate(linear_trials, axis=1)
                 events_traces.append(linear_trials)
             else:
-                events_traces.append(full_events_traces[i][:, frame_logs[i][1][0]:frame_logs[i][-1][0]])
+                events_traces.append(full_events_traces[i][:,
+                                     frame_logs[i][1][0]:frame_logs[i][-1][0]])
 
     bucket_events_traces = {'first': [], 'last': []}
     for i in xrange(NUMBER_OF_SESSIONS):
         # The second index in frame_logs is for taking only the bucket
-        bucket_events_traces['first'].append(full_events_traces[i][:, frame_logs[i][0][0]:frame_logs[i][0][1]])
-        bucket_events_traces['last'].append(full_events_traces[i][:, frame_logs[i][-1][0]:frame_logs[i][-1][1]])
+        bucket_events_traces['first'].append(full_events_traces[i]\
+                                [:, frame_logs[i][0][0]:frame_logs[i][0][1]])
+        bucket_events_traces['last'].append(full_events_traces[i]\
+                                [:, frame_logs[i][-1][0]:frame_logs[i][-1][1]])
 
     bins_traces = []
+    velocity_traces = []
     fixed_bins_traces = full_bins_traces[:]
+    fixed_velocity_traces = full_velocity_traces[:]
     # For c40m3 do this correction:
-    if MOUSE == '3':
-        fixed_bins_traces[4] = fixed_bins_traces[4][:2] + fixed_bins_traces[4][3:]
+    if mouse == '3':
+        fixed_bins_traces[4] = fixed_bins_traces[4][:2] + \
+                               fixed_bins_traces[4][3:]
+        fixed_velocity_traces[4] = fixed_velocity_traces[4][:2] + \
+                                   fixed_velocity_traces[4][3:]
     for i in xrange(NUMBER_OF_SESSIONS):
         bins_trace = []
+        velocity_trace = []
         for j in xrange(len(fixed_bins_traces[i])):
             bins_trace.extend(fixed_bins_traces[i][j])
+            velocity_trace.extend(fixed_velocity_traces[i][j])
 
         bins_trace = array(bins_trace)
+        velocity_trace = array(velocity_trace)
         # Fix 0-based indexing
         bins_trace -= 1
 
-        # Rebin from the range 0..23 to 0..11
+        # Rebin from the range 0..23 to 0..9
         bins_trace = floor(bins_trace.astype(float) / 24 * 10).astype(int)
 
         bins_traces.append(array(bins_trace))
+        velocity_traces.append(array(velocity_trace))
 
     # Remove extra frames
     for i in xrange(NUMBER_OF_SESSIONS):
         number_of_extra_frames = len(bins_traces[i]) - events_traces[i].shape[1]
         if number_of_extra_frames > 0:
-            print 'Removing %d frames from session %d' % (number_of_extra_frames, i)
+            print 'Removing %d frames from session %d' % \
+                  (number_of_extra_frames, i)
 
             bins_traces[i] = bins_traces[i][:-1]
+            velocity_traces[i] = velocity_traces[i][:-1]
 
 
 
     for i in xrange(NUMBER_OF_SESSIONS):
-        print 'Number of frames in session %d: %d' % (i, events_traces[i].shape[1])
+        print 'Number of frames in session %d: %d' % \
+              (i, events_traces[i].shape[1])
 
-    return bins_traces, events_traces, bucket_events_traces
+    return bins_traces, velocity_traces, events_traces, bucket_events_traces
 
-def extract_bambi_data():
+def extract_bambi_data(cage, mouse):
     """Taken from OR's code dynamic_analysis"""
 
     BASE_DIRNAME = r'D:\dev\real_time_imaging_experiment_analysis\phase_1_preprocessed'
     full_bins_traces = []
+    full_velocity_traces = []
     full_events_traces = []
     frame_logs = []
 
     for i in xrange(NUMBER_OF_SESSIONS):
-        bins_filename = os.path.join(BASE_DIRNAME, 'session_%d' % (i+1,), 'c'+CAGE+'m'+MOUSE, 'my_mvmt.mat')
+        bins_filename = os.path.join(BASE_DIRNAME, 'session_%d' % (i+1,), 'c'+cage+'m'+mouse, 'my_mvmt.mat')
         my_mvmt = scipy.io.loadmat(bins_filename)['my_mvmt'][0]
         session_bins_traces = []
+        session_velocity_traces = []
         for j in xrange(1, my_mvmt.shape[0]):
             # All 3 first indices are magic to get to the required position.
             # The 1: is used to remove the first behavioral frame which is dropped
             # in the neuronal.
             session_bins_traces.append(my_mvmt[j][0][0][3][1:].T[0])
-        full_bins_traces.append(session_bins_traces)
+            session_velocity_traces.append(my_mvmt[j][0][0][4][1:].T[0])
 
-        events_filename = os.path.join(BASE_DIRNAME, 'session_%d' % (i+1,), 'c'+CAGE+'m'+MOUSE, 'finalEventsMat.mat')
+        full_bins_traces.append(session_bins_traces)
+        full_velocity_traces.append(session_velocity_traces)
+
+        events_filename = os.path.join(BASE_DIRNAME, 'session_%d' % (i+1,), 'c'+cage+'m'+mouse, 'finalEventsMat.mat')
         allEventsMat = scipy.io.loadmat(events_filename)['allEventsMat'].T
         full_events_traces.append(allEventsMat)
 
-        frame_log_filename = os.path.join(BASE_DIRNAME, 'session_%d' % (i+1,), 'c'+CAGE+'m'+MOUSE, 'frameLog.csv')
+        frame_log_filename = os.path.join(BASE_DIRNAME, 'session_%d' % (i+1,), 'c'+cage+'m'+mouse, 'frameLog.csv')
         frameLog = csv.reader(open(frame_log_filename, 'rb'))
         # Skip header
         frameLog.next()
@@ -205,22 +256,27 @@ def extract_bambi_data():
         bucket_events_traces['last'].append(full_events_traces[i][:, frame_logs[i][-1][0]:frame_logs[i][-1][1]])
 
     bins_traces = []
-    fixed_bins_traces = []
+    velocity_traces = []
     for i in xrange(NUMBER_OF_SESSIONS):
         bins_trace = []
+        velocity_trace = []
         for j in xrange(len(full_bins_traces[i])):
             # Remove missing frames
             microscope_statistics = cPickle.load(open(
-                os.path.join(BASE_DIRNAME, 'session_%d' % (i+1,), 'c'+CAGE+'m'+MOUSE, 'linear_trial_%d' % (j+1,), 'microscope_statistics.pkl')))
+                os.path.join(BASE_DIRNAME, 'session_%d' % (i+1,), 'c'+cage+'m'+mouse, 'linear_trial_%d' % (j+1,), 'microscope_statistics.pkl')))
             fixed_bins_traces = delete(full_bins_traces[i][j], microscope_statistics['missing_frames'])
+            fixed_velocity_traces = delete(full_velocity_traces[i][j],
+                                       microscope_statistics['missing_frames'])
             bins_trace.extend(fixed_bins_traces)
+            velocity_trace.extend(fixed_velocity_traces)
 
         bins_trace = array(bins_trace, dtype=int)
+        velocity_trace = array(velocity_trace, dtype=int)
         # Fix 0-based indexing
         bins_trace -= 1
 
         bins_traces.append(array(bins_trace))
-
+        velocity_traces.append(array(velocity_trace))
     # Remove extra frames
     for i in xrange(NUMBER_OF_SESSIONS):
         minimum_number_of_frames = min(len(bins_traces[i]), events_traces[i].shape[1])
@@ -229,6 +285,7 @@ def extract_bambi_data():
             print 'Minimum number of frames in session %d is %d' % (i, minimum_number_of_frames)
 
             bins_traces[i] = bins_traces[i][:minimum_number_of_frames]
+            velocity_traces[i] = velocity_traces[i][:minimum_number_of_frames]
             events_traces[i] = events_traces[i][:, :minimum_number_of_frames]
 
     print
@@ -236,7 +293,7 @@ def extract_bambi_data():
     for i in xrange(NUMBER_OF_SESSIONS):
         print 'Number of frames in session %d: %d' % (i, events_traces[i].shape[1])
 
-    return bins_traces, events_traces, bucket_events_traces
+    return bins_traces, velocity_traces, events_traces, bucket_events_traces
 
 def set_in_data(current_data, bins_traces, events_traces, bucket_events_traces):
     current_data['bins_traces'] = bins_traces
@@ -262,7 +319,8 @@ def find_edge_cells(bins, events, edge_percent, edge_bins):
 
     return edge_neurons
 
-def find_edge_cells_for_all_sessions(bins_traces, events_traces, edge_percent, edge_bins):
+def find_edge_cells_for_all_sessions(bins_traces, events_traces, edge_percent,
+                                     edge_bins):
     edge_cells = []
     for events, bins in zip(events_traces, bins_traces):
         edge_cells.append(find_edge_cells(bins, events, edge_percent, edge_bins))
@@ -279,7 +337,8 @@ def renumber_sessions_cells_ID(events_traces, cell_to_index_map):
 
     return global_numbering_events
 
-def recurrence_probability(global_numbering_events, cells_indices, events_threshold):
+def recurrence_probability(global_numbering_events, cells_indices,
+                           events_threshold):
     # Calculate recurrence probability. assuming global_numbering_events is a list of events matrices that has global
     # numbering of neurons. and cells_indices are global indices
 
@@ -393,6 +452,8 @@ def analyze_bucket_dynamics(data, cell_type):
             non_edge_cells = all_neurons_indexing
             non_edge_cells[edge_cells] = 0
             cells_indices = non_edge_cells[non_edge_cells > 0]
+        elif cell_type == 'chosen_rois':
+            cells_indices = data['chosen roi indices']
 
         bucket_events = []
         for i, first_bucket_trial in enumerate(data['global_numbering_bucket']['first']):
@@ -413,8 +474,7 @@ def analyze_bucket_dynamics(data, cell_type):
 
     return bucket_sessions_dynamics
 
-
-def analyze_bucket_dynamics_for_non_edge(data):
+def analyze_and_separate_bucket_dynamics_for_non_edge(data):
     # Calculate recurrence probability, event rate, and ensamble correlation for a data set, given its
     # global_numbering_events and edge_cells calculated before. for all sessions
     events_threshold = 5
@@ -451,7 +511,8 @@ def analyze_bucket_dynamics_for_non_edge(data):
 
     return first_bucket_sessions_dynamics, last_bucket_sessions_dynamics
 
-def plot_dynamics(first_bucket_sessions_dynamics, last_bucket_sessions_dynamics, name):
+def plot_dynamics(first_bucket_sessions_dynamics, last_bucket_sessions_dynamics,
+                  name):
     # plot recurrence
     f, axx = plt.subplots(5, 1, sharey=True, sharex=True, figsize=(15, 10))
     f.suptitle('Recurrence Probability ' + name, fontsize=14)
@@ -509,7 +570,15 @@ def average_dynamics(sessions_dynamics, field_name):
 
     return average_field
 
-def plot_average_recurrence(first_bucket_sessions_dynamics, last_bucket_sessions_dynamics, name):
+def gather_dynamics_by_reference(sessions_dynamics, field_name):
+    dynamics_by_reference = np.zeros_like(sessions_dynamics[0][field_name])
+    for i, session in enumerate(sessions_dynamics):
+        dynamics_by_reference[i, :] = session[field_name][i,:]
+
+    return dynamics_by_reference
+
+def plot_average_recurrence(first_bucket_sessions_dynamics,
+                            last_bucket_sessions_dynamics, name):
     # plot recurrence
 
     first_bucket_average = average_dynamics(first_bucket_sessions_dynamics, 'recurrence')
@@ -527,7 +596,8 @@ def plot_average_recurrence(first_bucket_sessions_dynamics, last_bucket_sessions
     legend((line1, line2), ('first bucket', 'last bucket'))
     f.show()
 
-def plot_compare_average(nitzan_bucket_session_dynamics, bambi_bucket_session_dynamics, field_name):
+def plot_compare_average(nitzan_bucket_session_dynamics,
+                         bambi_bucket_session_dynamics, field_name):
     # The input dynamics are lists of the first and second dynamics
     nitzan_average = []
     bambi_average = []
@@ -605,6 +675,8 @@ def plot_all_bucket_dynamics(data):
         analyze_bucket_dynamics(data['nitzan'], 'non_edge_cells')
     bambi_bucket_dynamics_non_edge = \
         analyze_bucket_dynamics(data['bambi'], 'non_edge_cells')
+    bambi_bucket_dynamics_chosen = \
+        analyze_bucket_dynamics(data['bambi'], 'chosen_rois')
 
     f, axx = subplots(3, 2, sharey='row', sharex='row')
     f.subplots_adjust(top=0.9)
@@ -614,13 +686,19 @@ def plot_all_bucket_dynamics(data):
         (nitzan_bucket_dynamics_edge, 'recurrence')
     bambi_average_edge_recurrence = average_dynamics \
         (bambi_bucket_dynamics_edge, 'recurrence')
+    bambi_average_chosen_recurrence = average_dynamics \
+        (bambi_bucket_dynamics_chosen, 'recurrence')
     a, s = probabilities_properties(nitzan_average_edge_recurrence)
-    axx[0, 0].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
+    line1 = axx[0, 0].errorbar(arange(NUMBER_OF_SESSIONS), a, s, label='Phase 0')
     a, s = probabilities_properties(bambi_average_edge_recurrence)
-    axx[0, 0].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
+    line2 = axx[0, 0].errorbar(arange(NUMBER_OF_SESSIONS), a, s, label='Phase 1')
+    a, s = probabilities_properties(bambi_average_chosen_recurrence)
+    line3 = axx[0, 0].errorbar(arange(NUMBER_OF_SESSIONS), a, s, label='Phase 1 - chosen cells')
     axx[0, 0].set_ylabel('Recurrence',fontsize=14)
     axx[0, 0].set_title('Edge cells', fontsize=20)
     axx[0, 0].set_xlabel('Session difference', fontsize=14)
+    legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.,
+           handles=[line1[0], line2[0], line3[0]], fontsize=14)
 
     # For non edge cells
     nitzan_average_non_edge_recurrence = average_dynamics \
@@ -628,11 +706,9 @@ def plot_all_bucket_dynamics(data):
     bambi_average_non_edge_recurrence = average_dynamics \
         (bambi_bucket_dynamics_non_edge, 'recurrence')
     a, s = probabilities_properties(nitzan_average_non_edge_recurrence)
-    line1 = axx[0, 1].errorbar(arange(NUMBER_OF_SESSIONS), a, s, label='Phase 0')
+    axx[0, 1].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
     a, s = probabilities_properties(bambi_average_non_edge_recurrence)
-    line2 = axx[0, 1].errorbar(arange(NUMBER_OF_SESSIONS), a, s, label='Phase 1')
-    legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.,
-           handles=[line1, line2], fontsize=14)
+    axx[0, 1].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
     axx[0, 1].set_title('Non edge cells', fontsize=20)
     axx[0, 1].set_xlabel('Session difference', fontsize=14)
 
@@ -642,10 +718,13 @@ def plot_all_bucket_dynamics(data):
         average_dynamics(nitzan_bucket_dynamics_edge, 'ensamble_correlation')
     bambi_average_edge_ensamble_correltaion = \
         average_dynamics(bambi_bucket_dynamics_edge, 'ensamble_correlation')
-
+    bambi_average_chosen_ensamble_correltaion = \
+        average_dynamics(bambi_bucket_dynamics_chosen, 'ensamble_correlation')
     a, s = probabilities_properties(nitzan_average_edge_ensamble_correltaion)
     axx[1, 0].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
     a, s = probabilities_properties(bambi_average_edge_ensamble_correltaion)
+    axx[1, 0].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
+    a, s = probabilities_properties(bambi_average_chosen_ensamble_correltaion)
     axx[1, 0].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
     axx[1, 0].set_ylabel('Ensamble correlation', fontsize=14)
     axx[1, 0].set_xlabel('Session difference', fontsize=14)
@@ -679,19 +758,30 @@ def plot_all_bucket_dynamics(data):
         bambi_number_of_cells.append(
             np.count_nonzero(session['events_rate'][:, j]))
 
+    bambi_chosen_event_rate = []
+    for j, session in enumerate(bambi_bucket_dynamics_chosen):
+        bambi_chosen_event_rate.append(session['events_rate'])
+
     nitzan_edge_event_rate = np.vstack(nitzan_edge_event_rate)
     bambi_edge_event_rate = np.vstack(bambi_edge_event_rate)
+    bambi_chosen_event_rate = np.vstack(bambi_chosen_event_rate)
     nitzan_edge_event_rate[nitzan_edge_event_rate == 0] = nan
     bambi_edge_event_rate[bambi_edge_event_rate == 0] = nan
+    bambi_chosen_event_rate[bambi_chosen_event_rate == 0] = nan
     nitzan_average_edge_event_rate = np.nanmean(nitzan_edge_event_rate, axis=0)
     bambi_average_edge_event_rate = np.nanmean(bambi_edge_event_rate, axis=0)
+    bambi_average_chosen_event_rate = np.nanmean(bambi_chosen_event_rate, axis=0)
     nitzan_std_edge_event_rate = np.nanstd(nitzan_edge_event_rate, axis=0)
     bambi_std_edge_event_rate = np.nanstd(bambi_edge_event_rate, axis=0)
+    bambi_std_chosen_event_rate = np.nanstd(bambi_chosen_event_rate, axis=0)
 
     axx[2, 0].errorbar(arange(NUMBER_OF_SESSIONS), nitzan_average_edge_event_rate,
                        nitzan_std_edge_event_rate)
     axx[2, 0].errorbar(arange(NUMBER_OF_SESSIONS), bambi_average_edge_event_rate,
                        bambi_std_edge_event_rate)
+    axx[2, 0].errorbar(arange(NUMBER_OF_SESSIONS),
+                       bambi_average_chosen_event_rate,
+                       bambi_std_chosen_event_rate)
     axx[2, 0].set_ylabel('Number of events', fontsize=14)
     axx[2, 0].set_xlabel('Session number', fontsize=14)
 
@@ -741,38 +831,90 @@ def plot_all_bucket_dynamics(data):
     f.suptitle('C%sM%s' %(CAGE, MOUSE), fontsize=25)
     f.show()
     return
+
+def analyze_track_dynamics(data, cell_type):
+    # Calculate recurrence probability, event rate, and ensamble correlation and
+    # PV for a data set, given its global_numbering_events and edge_cells calculated
+    # before. for all sessions cell_type is either: 'edge_cells' or
+    # 'non_edge_cells'
+        events_threshold = 5
+        track_sessions_dynamics = []
+        number_of_neurons = data['global_numbering_events'][0].shape[0]
+
+        for session_index in xrange(NUMBER_OF_SESSIONS):
+            dynamics = {}
+            if cell_type == 'edge_cells':
+                cells_indices = data[cell_type][session_index]
+            elif cell_type == 'non_edge_cells':
+                edge_cells = data['edge_cells'][session_index]
+                all_neurons_indexing = np.arange(number_of_neurons)
+                non_edge_cells = all_neurons_indexing
+                non_edge_cells[edge_cells] = 0
+                cells_indices = non_edge_cells[non_edge_cells > 0]
+            elif cell_type == 'chosen_rois':
+                cells_indices = data['chosen roi indices']
+
+            track_events = data['global_numbering_events']
+
+            dynamics['recurrence'] = recurrence_probability \
+                (track_events, cells_indices, events_threshold)
+
+            dynamics['ensamble_correlation'] = calculate_ensamble_correlation \
+                (track_events, cells_indices)
+
+            dynamics['events_rate'] = count_events_per_session \
+                (track_events, cells_indices)
+
+            event_rate_distribution = calculate_rate_distribution\
+                (data['bins_traces'],track_events, cells_indices)
+
+            dynamics['pv_correlation'] = calculate_pv_correlations\
+                (event_rate_distribution)
+
+            track_sessions_dynamics.append(dynamics)
+
+        return track_sessions_dynamics
 
 def plot_all_track_dynamics(data): ##### EDIT THIS ####
-    nitzan_bucket_dynamics_edge = \
-        analyze_bucket_dynamics(data['nitzan'], 'edge_cells')
-    bambi_bucket_dynamics_edge = \
-        analyze_bucket_dynamics(data['bambi'], 'edge_cells')
-    nitzan_bucket_dynamics_non_edge = \
-        analyze_bucket_dynamics(data['nitzan'], 'non_edge_cells')
-    bambi_bucket_dynamics_non_edge = \
-        analyze_bucket_dynamics(data['bambi'], 'non_edge_cells')
+    nitzan_track_dynamics_edge = \
+        analyze_track_dynamics(data['nitzan'], 'edge_cells')
+    bambi_track_dynamics_edge = \
+        analyze_track_dynamics(data['bambi'], 'edge_cells')
+    nitzan_track_dynamics_non_edge = \
+        analyze_track_dynamics(data['nitzan'], 'non_edge_cells')
+    bambi_track_dynamics_non_edge = \
+        analyze_track_dynamics(data['bambi'], 'non_edge_cells')
+    bambi_track_dynamics_chosen = \
+        analyze_track_dynamics(data['bambi'], 'chosen_rois')
 
-    f, axx = subplots(3, 2, sharey='row', sharex='row')
+    f, axx = subplots(4, 2, sharey='row', sharex='row')
     f.subplots_adjust(top=0.9)
     ###### plot recurrence ######
     # For edge cells
     nitzan_average_edge_recurrence = average_dynamics\
-        (nitzan_bucket_dynamics_edge, 'recurrence')
+        (nitzan_track_dynamics_edge, 'recurrence')
     bambi_average_edge_recurrence = average_dynamics \
-        (bambi_bucket_dynamics_edge, 'recurrence')
+        (bambi_track_dynamics_edge, 'recurrence')
+    bambi_average_chosen_recurrence = average_dynamics \
+        (bambi_track_dynamics_chosen, 'recurrence')
     a, s = probabilities_properties(nitzan_average_edge_recurrence)
-    axx[0, 0].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
+    line1 = axx[0, 0].errorbar(arange(NUMBER_OF_SESSIONS), a, s, label='Phase 0')
     a, s = probabilities_properties(bambi_average_edge_recurrence)
-    axx[0, 0].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
+    line2 = axx[0, 0].errorbar(arange(NUMBER_OF_SESSIONS), a, s, label='Phase 1')
+    a, s = probabilities_properties(bambi_average_chosen_recurrence)
+    line3 = axx[0, 0].errorbar(arange(NUMBER_OF_SESSIONS), a, s,
+                       label='Phase 1 - chosen cells')
     axx[0, 0].set_ylabel('Recurrence',fontsize=14)
     axx[0, 0].set_title('Edge cells', fontsize=20)
     axx[0, 0].set_xlabel('Session difference', fontsize=14)
+    legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.,
+           handles=[line1[0], line2[0], line3[0]], fontsize=14)
 
     # For non edge cells
     nitzan_average_non_edge_recurrence = average_dynamics \
-        (nitzan_bucket_dynamics_non_edge, 'recurrence')
+        (nitzan_track_dynamics_non_edge, 'recurrence')
     bambi_average_non_edge_recurrence = average_dynamics \
-        (bambi_bucket_dynamics_non_edge, 'recurrence')
+        (bambi_track_dynamics_non_edge, 'recurrence')
     a, s = probabilities_properties(nitzan_average_non_edge_recurrence)
     line1 = axx[0, 1].errorbar(arange(NUMBER_OF_SESSIONS), a, s, label='Phase 0')
     a, s = probabilities_properties(bambi_average_non_edge_recurrence)
@@ -785,22 +927,25 @@ def plot_all_track_dynamics(data): ##### EDIT THIS ####
     ###### plot ensamble correlation ######
     # For edge cells
     nitzan_average_edge_ensamble_correltaion = \
-        average_dynamics(nitzan_bucket_dynamics_edge, 'ensamble_correlation')
+        average_dynamics(nitzan_track_dynamics_edge, 'ensamble_correlation')
     bambi_average_edge_ensamble_correltaion = \
-        average_dynamics(bambi_bucket_dynamics_edge, 'ensamble_correlation')
-
+        average_dynamics(bambi_track_dynamics_edge, 'ensamble_correlation')
+    bambi_average_chosen_ensamble_correltaion = \
+        average_dynamics(bambi_track_dynamics_chosen, 'ensamble_correlation')
     a, s = probabilities_properties(nitzan_average_edge_ensamble_correltaion)
     axx[1, 0].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
     a, s = probabilities_properties(bambi_average_edge_ensamble_correltaion)
+    axx[1, 0].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
+    a, s = probabilities_properties(bambi_average_chosen_ensamble_correltaion)
     axx[1, 0].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
     axx[1, 0].set_ylabel('Ensamble correlation', fontsize=14)
     axx[1, 0].set_xlabel('Session difference', fontsize=14)
 
     # For non edge cells
     nitzan_average_non_edge_ensamble_correltaion = \
-        average_dynamics(nitzan_bucket_dynamics_non_edge, 'ensamble_correlation')
+        average_dynamics(nitzan_track_dynamics_non_edge, 'ensamble_correlation')
     bambi_average_non_edge_ensamble_correltaion = \
-        average_dynamics(bambi_bucket_dynamics_non_edge, 'ensamble_correlation')
+        average_dynamics(bambi_track_dynamics_non_edge, 'ensamble_correlation')
 
     a, s = probabilities_properties(nitzan_average_non_edge_ensamble_correltaion)
     axx[1, 1].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
@@ -808,51 +953,100 @@ def plot_all_track_dynamics(data): ##### EDIT THIS ####
     axx[1, 1].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
     axx[1, 1].set_xlabel('Session difference', fontsize=14)
 
+    ###### plot pv correlation ######
+    # For edge cells
+    nitzan_average_edge_pv_correltaion = \
+        gather_dynamics_by_reference(nitzan_track_dynamics_edge,
+                                     'pv_correlation')
+    bambi_average_edge_pv_correltaion = \
+        gather_dynamics_by_reference(bambi_track_dynamics_edge,
+                                     'pv_correlation')
+    bambi_average_chosen_pv_correltaion = \
+        gather_dynamics_by_reference(bambi_track_dynamics_chosen,
+                                     'pv_correlation')
+
+    a, s = probabilities_properties(nitzan_average_edge_pv_correltaion)
+    axx[2, 0].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
+    a, s = probabilities_properties(bambi_average_edge_pv_correltaion)
+    axx[2, 0].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
+    a, s = probabilities_properties(bambi_average_chosen_pv_correltaion)
+    axx[2, 0].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
+    axx[2, 0].set_ylabel('PV correlation', fontsize=14)
+    axx[2, 0].set_xlabel('Session difference', fontsize=14)
+
+    # For non edge cells
+    nitzan_average_non_edge_pv_correltaion = \
+        gather_dynamics_by_reference(nitzan_track_dynamics_non_edge,
+                                     'pv_correlation')
+    bambi_average_non_edge_pv_correltaion = \
+        gather_dynamics_by_reference(bambi_track_dynamics_non_edge,
+                                     'pv_correlation')
+
+    a, s = probabilities_properties(
+        nitzan_average_non_edge_pv_correltaion)
+    axx[2, 1].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
+    a, s = probabilities_properties(bambi_average_non_edge_pv_correltaion)
+    axx[2, 1].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
+    axx[2, 1].set_xlabel('Session difference', fontsize=14)
+
+
     ###### plot number of events and cells ######
     # for edge cells
     nitzan_edge_event_rate = []
     nitzan_number_of_cells = []
     # count the event rate only in active cells
-    for j, session in enumerate(nitzan_bucket_dynamics_edge):
+    for j, session in enumerate(nitzan_track_dynamics_edge):
         nitzan_edge_event_rate.append(session['events_rate'])
         nitzan_number_of_cells.append(
             np.count_nonzero(session['events_rate'][:, j]))
 
     bambi_edge_event_rate = []
     bambi_number_of_cells = []
-    for j, session in enumerate(bambi_bucket_dynamics_edge):
+    for j, session in enumerate(bambi_track_dynamics_edge):
         bambi_edge_event_rate.append(session['events_rate'])
         bambi_number_of_cells.append(
             np.count_nonzero(session['events_rate'][:, j]))
 
+    bambi_chosen_event_rate = []
+    for j, session in enumerate(bambi_track_dynamics_chosen):
+        bambi_chosen_event_rate.append(session['events_rate'])
+
     nitzan_edge_event_rate = np.vstack(nitzan_edge_event_rate)
     bambi_edge_event_rate = np.vstack(bambi_edge_event_rate)
+    bambi_chosen_event_rate = np.vstack(bambi_chosen_event_rate)
     nitzan_edge_event_rate[nitzan_edge_event_rate == 0] = nan
     bambi_edge_event_rate[bambi_edge_event_rate == 0] = nan
+    bambi_chosen_event_rate[bambi_chosen_event_rate == 0] = nan
     nitzan_average_edge_event_rate = np.nanmean(nitzan_edge_event_rate, axis=0)
     bambi_average_edge_event_rate = np.nanmean(bambi_edge_event_rate, axis=0)
+    bambi_average_chosen_event_rate = np.nanmean(bambi_chosen_event_rate, axis=0)
     nitzan_std_edge_event_rate = np.nanstd(nitzan_edge_event_rate, axis=0)
     bambi_std_edge_event_rate = np.nanstd(bambi_edge_event_rate, axis=0)
+    bambi_std_chosen_event_rate = np.nanstd(bambi_chosen_event_rate, axis=0)
 
-    axx[2, 0].errorbar(arange(NUMBER_OF_SESSIONS), nitzan_average_edge_event_rate,
+
+    axx[3, 0].errorbar(arange(NUMBER_OF_SESSIONS), nitzan_average_edge_event_rate,
                        nitzan_std_edge_event_rate)
-    axx[2, 0].errorbar(arange(NUMBER_OF_SESSIONS), bambi_average_edge_event_rate,
+    axx[3, 0].errorbar(arange(NUMBER_OF_SESSIONS), bambi_average_edge_event_rate,
                        bambi_std_edge_event_rate)
-    axx[2, 0].set_ylabel('Number of events', fontsize=14)
-    axx[2, 0].set_xlabel('Session number', fontsize=14)
+    axx[3, 0].errorbar(arange(NUMBER_OF_SESSIONS),
+                       bambi_average_chosen_event_rate,
+                       bambi_std_chosen_event_rate)
+    axx[3, 0].set_ylabel('Number of events', fontsize=14)
+    axx[3, 0].set_xlabel('Session number', fontsize=14)
 
     # For non edge cells
     nitzan_non_edge_event_rate = []
     nitzan_number_of_cells = []
     # count the event rate only in active cells
-    for j, session in enumerate(nitzan_bucket_dynamics_non_edge):
+    for j, session in enumerate(nitzan_track_dynamics_non_edge):
         nitzan_non_edge_event_rate.append(session['events_rate'])
         nitzan_number_of_cells.append(
             np.count_nonzero(session['events_rate'][:, j]))
 
     bambi_non_edge_event_rate = []
     bambi_number_of_cells = []
-    for j, session in enumerate(bambi_bucket_dynamics_non_edge):
+    for j, session in enumerate(bambi_track_dynamics_non_edge):
         bambi_non_edge_event_rate.append(session['events_rate'])
         bambi_number_of_cells.append(
             np.count_nonzero(session['events_rate'][:, j]))
@@ -866,16 +1060,16 @@ def plot_all_track_dynamics(data): ##### EDIT THIS ####
     nitzan_std_non_edge_event_rate = np.nanstd(nitzan_non_edge_event_rate, axis=0)
     bambi_std_non_edge_event_rate = np.nanstd(bambi_non_edge_event_rate, axis=0)
 
-    axx[2, 1].errorbar(arange(NUMBER_OF_SESSIONS),
+    axx[3, 1].errorbar(arange(NUMBER_OF_SESSIONS),
                        nitzan_average_non_edge_event_rate,
                        nitzan_std_non_edge_event_rate)
-    axx[2, 1].errorbar(arange(NUMBER_OF_SESSIONS),
+    axx[3, 1].errorbar(arange(NUMBER_OF_SESSIONS),
                        bambi_average_non_edge_event_rate,
                        bambi_std_non_edge_event_rate)
-    axx[2, 1].set_xlabel('Session number', fontsize=14)
+    axx[3, 1].set_xlabel('Session number', fontsize=14)
 
     setp(axx, xticks=range(5), xticklabels=['1', '2', '3', '4', '5'])
-    for i in range(3):
+    for i in range(4):
         for j in range(2):
             for xtick in axx[i, j].xaxis.get_major_ticks():
                 xtick.label.set_fontsize(14)
@@ -887,75 +1081,92 @@ def plot_all_track_dynamics(data): ##### EDIT THIS ####
     f.suptitle('C%sM%s' %(CAGE, MOUSE), fontsize=25)
     f.show()
     return
+
+def calculate_rate_distribution(bins_traces, events_traces, cell_indices):
+    event_rate_distributions = []
+    for i in xrange(NUMBER_OF_SESSIONS):
+        event_rate_distribution = calculate_event_rate_distribution(
+            bins_traces[i], events_traces[i][cell_indices, :])
+
+        event_rate_distributions.append(event_rate_distribution)
+
+    return event_rate_distributions
+
+def calculate_pv_correlations(event_rate_distribution):
+    # This is the PV of a single session
+    number_of_bins = event_rate_distribution[0].shape[1]
+
+    # We now correlate all sessions
+    correlations = zeros((NUMBER_OF_SESSIONS, NUMBER_OF_SESSIONS))
+    for i in xrange(NUMBER_OF_SESSIONS):
+        for j in xrange(NUMBER_OF_SESSIONS):
+            bins_correlations = []
+            for k in xrange(number_of_bins):
+                first_bin_activity_vector = event_rate_distribution[i].T[k]
+                second_bin_activity_vector = event_rate_distribution[j].T[k]
+                c = \
+                corrcoef(first_bin_activity_vector, second_bin_activity_vector)[
+                    0, 1]
+                if isnan(c):
+                    continue
+                bins_correlations.append(c)
+            correlations[i, j] = mean(array(bins_correlations))
+
+    return correlations
 
 def main():
     data = {'nitzan': {},
             'bambi': {}}
 
-    [bins_traces, events_traces, bucket_events_traces] = extract_nitzans_data()
-    data['nitzan'] = set_in_data(data['nitzan'], bins_traces, events_traces, bucket_events_traces)
+    [bins_traces, _, events_traces, bucket_events_traces] = extract_nitzans_data(CAGE, MOUSE)
+    data['nitzan'] = set_in_data(data['nitzan'], bins_traces, events_traces,
+                                 bucket_events_traces)
 
-    [bins_traces, events_traces, bucket_events_traces] = extract_bambi_data()
-    data['bambi'] = set_in_data(data['bambi'], bins_traces, events_traces, bucket_events_traces)
+    [bins_traces, _, events_traces, bucket_events_traces] = extract_bambi_data(CAGE, MOUSE)
+    data['bambi'] = set_in_data(data['bambi'], bins_traces, events_traces,
+                                bucket_events_traces)
 
     # Matching all neurons' IDs to the global ID
-    nitzan_registration, bambi_registration = load_cell_registration()
-    data['nitzan']['global_numbering_events'] = renumber_sessions_cells_ID(data['nitzan']['events_traces'],
-                                                                           nitzan_registration)
+    nitzan_registration, bambi_registration, ROI_global_indices = load_cell_registration(MOUSE)
+    data['nitzan']['global_numbering_events'] = renumber_sessions_cells_ID\
+        (data['nitzan']['events_traces'], nitzan_registration)
 
-    data['bambi']['global_numbering_events'] = renumber_sessions_cells_ID(data['bambi']['events_traces'],
-                                                                               bambi_registration)
+    data['bambi']['global_numbering_events'] = renumber_sessions_cells_ID\
+        (data['bambi']['events_traces'],bambi_registration)
+
+    data['bambi']['chosen roi indices'] = ROI_global_indices
 
     data['nitzan']['global_numbering_bucket'] = {}
-    data['nitzan']['global_numbering_bucket']['first'] = renumber_sessions_cells_ID(data['nitzan']['bucket_events_traces']['first'],
-                                                                           nitzan_registration)
+    data['nitzan']['global_numbering_bucket']['first'] = \
+        renumber_sessions_cells_ID(
+            data['nitzan']['bucket_events_traces']['first'],nitzan_registration)
 
-    data['nitzan']['global_numbering_bucket']['last'] = renumber_sessions_cells_ID(
-        data['nitzan']['bucket_events_traces']['last'],
-        nitzan_registration)
+    data['nitzan']['global_numbering_bucket']['last'] =\
+        renumber_sessions_cells_ID(
+        data['nitzan']['bucket_events_traces']['last'],nitzan_registration)
 
     data['bambi']['global_numbering_bucket'] = {}
-    data['bambi']['global_numbering_bucket']['first'] = renumber_sessions_cells_ID(data['bambi']['bucket_events_traces']['first'],
-                                                                          bambi_registration)
+    data['bambi']['global_numbering_bucket']['first'] = \
+        renumber_sessions_cells_ID(
+            data['bambi']['bucket_events_traces']['first'], bambi_registration)
 
-    data['bambi']['global_numbering_bucket']['last'] = renumber_sessions_cells_ID(
-        data['bambi']['bucket_events_traces']['last'],
-        bambi_registration)
+    data['bambi']['global_numbering_bucket']['last'] = \
+        renumber_sessions_cells_ID(
+        data['bambi']['bucket_events_traces']['last'], bambi_registration)
 
     # Finding edge cells from all days
-    data['nitzan']['edge_cells'] = find_edge_cells_for_all_sessions(data['nitzan']['bins_traces'],
-                                                                    data['nitzan']['global_numbering_events'],
-                                                                    EDGE_PERCENT, EDGE_BINS)
+    data['nitzan']['edge_cells'] = find_edge_cells_for_all_sessions\
+        (data['nitzan']['bins_traces'],
+         data['nitzan']['global_numbering_events'],
+         EDGE_PERCENT, EDGE_BINS)
 
-    data['bambi']['edge_cells'] = find_edge_cells_for_all_sessions(data['bambi']['bins_traces'],
-                                                                    data['bambi']['global_numbering_events'],
-                                                                    EDGE_PERCENT, EDGE_BINS)
-
-    # Calculate recurrence probability, event rate, and ensamble correlation for edge cells
-    # [nitzan_first_bucket_dynamics, nitzan_last_bucket_dynamics] = analyze_bucket_dynamics_for_edge(data['nitzan'])
-    # [bambi_first_bucket_dynamics, bambi_last_bucket_dynamics] = analyze_bucket_dynamics_for_edge(data['bambi'])
-    #
-    # plot_average_recurrence(nitzan_first_bucket_dynamics, nitzan_last_bucket_dynamics, 'Nitzan - edge cells')
-    # plot_average_recurrence(bambi_first_bucket_dynamics, bambi_last_bucket_dynamics, 'Bambi - edge cells')
-
-    # plot_compare_average([nitzan_first_bucket_dynamics, nitzan_last_bucket_dynamics],
-    #                      [bambi_first_bucket_dynamics, bambi_last_bucket_dynamics],'events_rate')
-    # plot_compare_average([nitzan_first_bucket_dynamics, nitzan_last_bucket_dynamics],
-    #                      [bambi_first_bucket_dynamics, bambi_last_bucket_dynamics], 'ensamble_correlation')
-
-    # Calculate recurrence probability, event rate, and ensamble correlation for non edge cells
-    # [nitzan_first_bucket_dynamics, nitzan_last_bucket_dynamics] = analyze_bucket_dynamics_for_non_edge(data['nitzan'])
-    # [bambi_first_bucket_dynamics, bambi_last_bucket_dynamics] = analyze_bucket_dynamics_for_non_edge(data['bambi'])
-    #
-    # plot_average_recurrence(nitzan_first_bucket_dynamics, nitzan_last_bucket_dynamics, 'Nitzan - non edge cells')
-    # plot_average_recurrence(bambi_first_bucket_dynamics, bambi_last_bucket_dynamics, 'Bambi - non edge cells')
-
-    # plot_compare_average([nitzan_first_bucket_dynamics, nitzan_last_bucket_dynamics],
-    #                      [bambi_first_bucket_dynamics, bambi_last_bucket_dynamics], 'events_rate')
-    # plot_compare_average([nitzan_first_bucket_dynamics, nitzan_last_bucket_dynamics],
-    #                      [bambi_first_bucket_dynamics, bambi_last_bucket_dynamics], 'ensamble_correlation')
+    data['bambi']['edge_cells'] = find_edge_cells_for_all_sessions\
+        (data['bambi']['bins_traces'],
+         data['bambi']['global_numbering_events'],
+         EDGE_PERCENT, EDGE_BINS)
 
     plot_all_bucket_dynamics(data)
+    plot_all_track_dynamics(data)
     raw_input('Press enter to quit')
 
 if __name__ == '__main__':
