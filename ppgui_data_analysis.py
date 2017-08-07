@@ -216,7 +216,7 @@ def extract_bambi_data(cage, mouse):
     frame_logs = []
 
     for i in xrange(NUMBER_OF_SESSIONS):
-        bins_filename = os.path.join(BASE_DIRNAME, 'session_%d' % (i+1,), 'c'+cage+'m'+mouse, 'my_mvmt.mat')
+        bins_filename = os.path.join(BASE_DIRNAME, 'session_%d' % (i+1), 'c'+cage+'m'+mouse, 'my_mvmt.mat')
         my_mvmt = scipy.io.loadmat(bins_filename)['my_mvmt'][0]
         session_bins_traces = []
         session_velocity_traces = []
@@ -697,8 +697,8 @@ def plot_all_bucket_dynamics(data):
     axx[0, 0].set_ylabel('Recurrence',fontsize=14)
     axx[0, 0].set_title('Edge cells', fontsize=20)
     axx[0, 0].set_xlabel('Session difference', fontsize=14)
-    legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.,
-           handles=[line1[0], line2[0], line3[0]], fontsize=14)
+    legend(bbox_to_anchor=(1.3, 1.2),
+           handles=[line1, line2, line3], fontsize=14)
 
     # For non edge cells
     nitzan_average_non_edge_recurrence = average_dynamics \
@@ -907,8 +907,8 @@ def plot_all_track_dynamics(data): ##### EDIT THIS ####
     axx[0, 0].set_ylabel('Recurrence',fontsize=14)
     axx[0, 0].set_title('Edge cells', fontsize=20)
     axx[0, 0].set_xlabel('Session difference', fontsize=14)
-    legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.,
-           handles=[line1[0], line2[0], line3[0]], fontsize=14)
+    legend(bbox_to_anchor=(1.3, 1.2),
+           handles=[line1, line2, line3], fontsize=14)
 
     # For non edge cells
     nitzan_average_non_edge_recurrence = average_dynamics \
@@ -919,8 +919,7 @@ def plot_all_track_dynamics(data): ##### EDIT THIS ####
     line1 = axx[0, 1].errorbar(arange(NUMBER_OF_SESSIONS), a, s, label='Phase 0')
     a, s = probabilities_properties(bambi_average_non_edge_recurrence)
     line2 = axx[0, 1].errorbar(arange(NUMBER_OF_SESSIONS), a, s, label='Phase 1')
-    legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.,
-           handles=[line1, line2], fontsize=14)
+
     axx[0, 1].set_title('Non edge cells', fontsize=20)
     axx[0, 1].set_xlabel('Session difference', fontsize=14)
 
