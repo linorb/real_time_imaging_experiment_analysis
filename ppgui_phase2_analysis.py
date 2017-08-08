@@ -179,17 +179,17 @@ def plot_all_track_dynamics(data): ##### EDIT THIS ####
         (bambi_track_dynamics_non_edge, 'recurrence')[0]
     a, s = pda.probabilities_properties(bambi_average_edge_recurrence)
     line1 = axx[0].errorbar(arange(NUMBER_OF_SESSIONS), a, s, label='edge cells')
-    a, s = pda.probabilities_properties(bambi_average_chosen_recurrence)
-    line2 = axx[0].errorbar(arange(NUMBER_OF_SESSIONS), a, s,
-                       label='chosen cells')
     a, s = pda.probabilities_properties(bambi_average_non_edge_recurrence)
     line3= axx[0].errorbar(arange(NUMBER_OF_SESSIONS), a, s,
                                label='non edge cells')
+    a, s = pda.probabilities_properties(bambi_average_chosen_recurrence)
+    line2 = axx[0].errorbar(arange(NUMBER_OF_SESSIONS), a, s,
+                            label='chosen cells')
 
     axx[0].set_ylabel('Recurrence',fontsize=14)
     axx[0].set_xlabel('Session difference', fontsize=14)
     legend(bbox_to_anchor=(1.05, 1.),
-           handles=[line1, line2, line3], fontsize=14)
+           handles=[line1, line3, line2], fontsize=14)
 
     ###### plot ensamble correlation ######
     # For edge cells
@@ -203,10 +203,12 @@ def plot_all_track_dynamics(data): ##### EDIT THIS ####
 
     a, s = pda.probabilities_properties(bambi_average_edge_ensamble_correltaion)
     axx[1].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
+    a, s = pda.probabilities_properties(
+        bambi_average_non_edge_ensamble_correltaion)
+    axx[1].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
     a, s = pda.probabilities_properties(bambi_average_chosen_ensamble_correltaion)
     axx[1].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
-    a, s = pda.probabilities_properties(bambi_average_non_edge_ensamble_correltaion)
-    axx[1].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
+
     axx[1].set_ylabel('Ensamble correlation', fontsize=14)
     axx[1].set_xlabel('Session difference', fontsize=14)
 
@@ -225,10 +227,11 @@ def plot_all_track_dynamics(data): ##### EDIT THIS ####
 
     a, s = pda.probabilities_properties(bambi_average_edge_pv_correltaion)
     axx[2].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
-    a, s = pda.probabilities_properties(bambi_average_chosen_pv_correltaion)
-    axx[2].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
     a, s = pda.probabilities_properties(bambi_average_non_edge_pv_correltaion)
     axx[2].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
+    a, s = pda.probabilities_properties(bambi_average_chosen_pv_correltaion)
+    axx[2].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
+
     axx[2].set_ylabel('PV correlation', fontsize=14)
     axx[2].set_xlabel('Session difference', fontsize=14)
 
@@ -257,9 +260,6 @@ def plot_all_track_dynamics(data): ##### EDIT THIS ####
 
     axx[3].errorbar(arange(NUMBER_OF_SESSIONS), bambi_average_edge_event_rate,
                        bambi_std_edge_event_rate)
-    axx[3].errorbar(arange(NUMBER_OF_SESSIONS),
-                       bambi_average_chosen_event_rate,
-                       bambi_std_chosen_event_rate)
     axx[3].set_ylabel('Number of events', fontsize=14)
     axx[3].set_xlabel('Session number', fontsize=14)
 
@@ -278,8 +278,12 @@ def plot_all_track_dynamics(data): ##### EDIT THIS ####
     axx[3].errorbar(arange(NUMBER_OF_SESSIONS),
                        bambi_average_non_edge_event_rate,
                        bambi_std_non_edge_event_rate)
+    axx[3].errorbar(arange(NUMBER_OF_SESSIONS),
+                    bambi_average_chosen_event_rate,
+                    bambi_std_chosen_event_rate)
 
-    setp(axx, xticks=range(5), xticklabels=['1', '2', '3', '4', '5'])
+    setp(axx, xticks=range(5))
+    setp(axx[3], xticklabels=['1', '2', '3', '4', '5'])
     for i in range(4):
         for xtick in axx[i].xaxis.get_major_ticks():
             xtick.label.set_fontsize(14)
@@ -350,17 +354,18 @@ def plot_all_bucket_dynamics(data):  ##### EDIT THIS ####
     a, s = pda.probabilities_properties(bambi_average_edge_recurrence)
     line1 = axx[0].errorbar(arange(NUMBER_OF_SESSIONS), a, s,
                             label='edge cells')
-    a, s = pda.probabilities_properties(bambi_average_chosen_recurrence)
-    line2 = axx[0].errorbar(arange(NUMBER_OF_SESSIONS), a, s,
-                            label='chosen cells')
     a, s = pda.probabilities_properties(bambi_average_non_edge_recurrence)
     line3 = axx[0].errorbar(arange(NUMBER_OF_SESSIONS), a, s,
                             label='non edge cells')
 
+    a, s = pda.probabilities_properties(bambi_average_chosen_recurrence)
+    line2 = axx[0].errorbar(arange(NUMBER_OF_SESSIONS), a, s,
+                            label='chosen cells')
+
     axx[0].set_ylabel('Recurrence', fontsize=14)
     axx[0].set_xlabel('Session difference', fontsize=14)
     legend(bbox_to_anchor=(1.05, 1.),
-           handles=[line1, line2, line3], fontsize=14)
+           handles=[line1, line3, line2], fontsize=14)
 
     ###### plot ensamble correlation ######
     # For edge cells
@@ -377,10 +382,10 @@ def plot_all_bucket_dynamics(data):  ##### EDIT THIS ####
     a, s = pda.probabilities_properties(bambi_average_edge_ensamble_correltaion)
     axx[1].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
     a, s = pda.probabilities_properties(
-        bambi_average_chosen_ensamble_correltaion)
+        bambi_average_non_edge_ensamble_correltaion)
     axx[1].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
     a, s = pda.probabilities_properties(
-        bambi_average_non_edge_ensamble_correltaion)
+        bambi_average_chosen_ensamble_correltaion)
     axx[1].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
     axx[1].set_ylabel('Ensamble correlation', fontsize=14)
     axx[1].set_xlabel('Session difference', fontsize=14)
@@ -411,9 +416,6 @@ def plot_all_bucket_dynamics(data):  ##### EDIT THIS ####
 
     axx[2].errorbar(arange(NUMBER_OF_SESSIONS), bambi_average_edge_event_rate,
                     bambi_std_edge_event_rate)
-    axx[2].errorbar(arange(NUMBER_OF_SESSIONS),
-                    bambi_average_chosen_event_rate,
-                    bambi_std_chosen_event_rate)
     axx[2].set_ylabel('Number of events', fontsize=14)
     axx[2].set_xlabel('Session number', fontsize=14)
 
@@ -433,6 +435,9 @@ def plot_all_bucket_dynamics(data):  ##### EDIT THIS ####
     axx[2].errorbar(arange(NUMBER_OF_SESSIONS),
                     bambi_average_non_edge_event_rate,
                     bambi_std_non_edge_event_rate)
+    axx[2].errorbar(arange(NUMBER_OF_SESSIONS),
+                    bambi_average_chosen_event_rate,
+                    bambi_std_chosen_event_rate)
 
     setp(axx, xticks=range(5), xticklabels=['1', '2', '3', '4', '5'])
     for i in range(3):
@@ -531,7 +536,7 @@ def main():
 
     plot_all_bucket_dynamics(data)
     plot_all_track_dynamics(data)
-    plot_bucket_decoding(data)
+    # plot_bucket_decoding(data)
     raw_input('Press enter to quit')
 
 if __name__ == '__main__':
