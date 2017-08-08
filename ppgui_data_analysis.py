@@ -667,6 +667,44 @@ def plot_compare_average(nitzan_bucket_session_dynamics,
 
     f.show()
 
+def calculate_population_percent(events_traces, cell_indices):
+    number_of_sessions = int(len(events_traces))
+    number_of_cells = len(cell_indices)
+    session_percent = np.zeros(number_of_sessions)
+    for i, session in enumerate(events_traces):
+        session_percent[i] = np.sum(np.sum(session[cell_indices, :], axis=1)>0)\
+                             /float(number_of_cells)
+
+    return session_percent
+
+def plot_chosen_cells_participance(data):
+    chosen_cells = data['bambi']['chosen roi indices']
+    f = figure()
+    linear_percent = calculate_population_percent\
+        (data['bambi']['global_numbering_events'],chosen_cells)
+
+    bucket_events = []
+    for i, first_bucket_trial in enumerate(
+            data['bambi']['global_numbering_bucket']['first']):
+        last_bucket_trial = data['bambi']['global_numbering_bucket']['last'][i]
+        session_bucket_trials = np.hstack(
+            [first_bucket_trial, last_bucket_trial])
+        bucket_events.append(session_bucket_trials)
+
+    bucket_percent = calculate_population_percent(bucket_events, chosen_cells)
+
+    number_of_sessions = len(linear_percent)
+    plot(range(number_of_sessions), linear_percent, label='Phase 1 - linear track')
+    plot(range(number_of_sessions), bucket_percent, label='Phase 1 - bucket')
+    ylabel('Percent of chosen cells participation', fontsize=17)
+    xlabel('# Session', fontsize=17)
+    legend(fontsize=16)
+    xticks(fontsize=16)
+    yticks(fontsize=16)
+    ylim(0,1)
+    f.show()
+    return
+
 def plot_all_bucket_dynamics(data):
     nitzan_bucket_dynamics_edge = \
         analyze_bucket_dynamics(data['nitzan'], 'edge_cells')
@@ -1082,6 +1120,110 @@ def plot_all_track_dynamics(data): ##### EDIT THIS ####
     f.show()
     return
 
+def plot_recurrence_for_consecutive_days(data):
+    nitzan_bucket_dynamics_edge = \
+        analyze_bucket_dynamics(data['nitzan'], 'edge_cells')
+    bambi_bucket_dynamics_edge = \
+        analyze_bucket_dynamics(data['bambi'], 'edge_cells')
+    nitzan_bucket_dynamics_non_edge = \
+        analyze_bucket_dynamics(data['nitzan'], 'non_edge_cells')
+    bambi_bucket_dynamics_non_edge = \
+        analyze_bucket_dynamics(data['bambi'], 'non_edge_cells')
+    bambi_bucket_dynamics_chosen = \
+        analyze_bucket_dynamics(data['bambi'], 'chosen_rois')
+
+    f, axx = subplots(2, 2, sharey='row', sharex='row')
+    f.subplots_adjust(top=0.9)
+    ###### plot recurrence ######
+    # For edge cells
+    nitzan_average_edge_recurrence = average_dynamics \
+        (nitzan_bucket_dynamics_edge, 'recurrence')
+    bambi_average_edge_recurrence = average_dynamics \
+        (bambi_bucket_dynamics_edge, 'recurrence')
+    bambi_average_chosen_recurrence = average_dynamics \
+        (bambi_bucket_dynamics_chosen, 'recurrence')
+    a = diagonal(nitzan_average_edge_recurrence[0], offset=1)
+    s = diagonal(nitzan_average_edge_recurrence[1], offset=1)
+    line1 = axx[0, 0].errorbar(arange(1, NUMBER_OF_SESSIONS), a, s,
+                               label='Phase 0')
+    a = diagonal(bambi_average_edge_recurrence[0], offset=1)
+    s = diagonal(bambi_average_edge_recurrence[1], offset=1)
+    line2 = axx[0, 0].errorbar(arange(1, NUMBER_OF_SESSIONS), a, s,
+                               label='Phase 1')
+    a = diagonal(bambi_average_chosen_recurrence[0], offset=1)
+    s = diagonal(bambi_average_chosen_recurrence[1], offset=1)
+    line3 = axx[0, 0].errorbar(arange(1, NUMBER_OF_SESSIONS), a, s,
+                               label='Phase 1 - chosen cells')
+    axx[0, 0].set_ylabel('Bucket consecutive recurrence', fontsize=14)
+    axx[0, 0].set_title('Edge cells', fontsize=20)
+    axx[0, 0].set_xlabel('#Session', fontsize=14)
+    legend(bbox_to_anchor=(1.3, 1.2),
+           handles=[line1, line2, line3], fontsize=14)
+
+    # For non edge cells
+    nitzan_average_non_edge_recurrence = average_dynamics \
+        (nitzan_bucket_dynamics_non_edge, 'recurrence')
+    bambi_average_non_edge_recurrence = average_dynamics \
+        (bambi_bucket_dynamics_non_edge, 'recurrence')
+    a = diagonal(nitzan_average_non_edge_recurrence[0], offset=1)
+    s = diagonal(nitzan_average_non_edge_recurrence[1], offset=1)
+    axx[0, 1].errorbar(arange(1, NUMBER_OF_SESSIONS), a, s)
+    a = diagonal(bambi_average_non_edge_recurrence[0], offset=1)
+    s = diagonal(bambi_average_non_edge_recurrence[1], offset=1)
+    axx[0, 1].errorbar(arange(1, NUMBER_OF_SESSIONS), a, s)
+    axx[0, 1].set_title('Non edge cells', fontsize=20)
+    axx[0, 1].set_xlabel('#Session', fontsize=14)
+
+    # Track dynamics
+    nitzan_track_dynamics_edge = \
+        analyze_track_dynamics(data['nitzan'], 'edge_cells')
+    bambi_track_dynamics_edge = \
+        analyze_track_dynamics(data['bambi'], 'edge_cells')
+    nitzan_track_dynamics_non_edge = \
+        analyze_track_dynamics(data['nitzan'], 'non_edge_cells')
+    bambi_track_dynamics_non_edge = \
+        analyze_track_dynamics(data['bambi'], 'non_edge_cells')
+    bambi_track_dynamics_chosen = \
+        analyze_track_dynamics(data['bambi'], 'chosen_rois')
+
+    ###### plot recurrence ######
+    # For edge cells
+    nitzan_average_edge_recurrence = average_dynamics \
+        (nitzan_track_dynamics_edge, 'recurrence')
+    bambi_average_edge_recurrence = average_dynamics \
+        (bambi_track_dynamics_edge, 'recurrence')
+    bambi_average_chosen_recurrence = average_dynamics \
+        (bambi_track_dynamics_chosen, 'recurrence')
+    a = diagonal(nitzan_average_edge_recurrence[0], offset=1)
+    s = diagonal(nitzan_average_edge_recurrence[1], offset=1)
+    axx[1, 0].errorbar(arange(1, NUMBER_OF_SESSIONS), a, s)
+    a = diagonal(bambi_average_edge_recurrence[0], offset=1)
+    s = diagonal(bambi_average_edge_recurrence[1], offset=1)
+    axx[1, 0].errorbar(arange(1, NUMBER_OF_SESSIONS), a, s)
+    a = diagonal(bambi_average_chosen_recurrence[0], offset=1)
+    s = diagonal(bambi_average_chosen_recurrence[1], offset=1)
+    axx[1, 0].errorbar(arange(1, NUMBER_OF_SESSIONS), a, s)
+    axx[1, 0].set_ylabel('Track consecutive recurrence', fontsize=14)
+    axx[1, 0].set_title('Edge cells', fontsize=20)
+    axx[1, 0].set_xlabel('#Session', fontsize=14)
+
+    # For non edge cells
+    nitzan_average_non_edge_recurrence = average_dynamics \
+        (nitzan_track_dynamics_non_edge, 'recurrence')
+    bambi_average_non_edge_recurrence = average_dynamics \
+        (bambi_track_dynamics_non_edge, 'recurrence')
+    a = diagonal(nitzan_average_non_edge_recurrence[0], offset=1)
+    s = diagonal(nitzan_average_non_edge_recurrence[1], offset=1)
+    axx[1, 1].errorbar(arange(1, NUMBER_OF_SESSIONS), a, s)
+    a = diagonal(bambi_average_non_edge_recurrence[0], offset=1)
+    s = diagonal(bambi_average_non_edge_recurrence[1], offset=1)
+    axx[1, 1].errorbar(arange(1, NUMBER_OF_SESSIONS), a, s)
+    axx[1, 1].set_xlabel('#Session', fontsize=14)
+
+    f.suptitle('C%sM%s' %(CAGE, MOUSE), fontsize=25)
+    f.show()
+    return
+
 def calculate_rate_distribution(bins_traces, events_traces, cell_indices):
     event_rate_distributions = []
     for i in xrange(NUMBER_OF_SESSIONS):
@@ -1167,6 +1309,7 @@ def main():
 
     plot_all_bucket_dynamics(data)
     plot_all_track_dynamics(data)
+    # plot_chosen_cells_participance(data)
     raw_input('Press enter to quit')
 
 if __name__ == '__main__':
