@@ -567,8 +567,9 @@ def average_dynamics(sessions_dynamics, field_name):
         concatenated_field.append(session[field_name])
     concatenated_field = np.stack(concatenated_field, axis=2)
     average_field = np.mean(concatenated_field, axis=2)
+    std_field = np.std(concatenated_field, axis=2)
 
-    return average_field
+    return average_field, std_field
 
 def gather_dynamics_by_reference(sessions_dynamics, field_name):
     dynamics_by_reference = np.zeros_like(sessions_dynamics[0][field_name])
@@ -683,11 +684,11 @@ def plot_all_bucket_dynamics(data):
     ###### plot recurrence ######
     # For edge cells
     nitzan_average_edge_recurrence = average_dynamics\
-        (nitzan_bucket_dynamics_edge, 'recurrence')
+        (nitzan_bucket_dynamics_edge, 'recurrence')[0]
     bambi_average_edge_recurrence = average_dynamics \
-        (bambi_bucket_dynamics_edge, 'recurrence')
+        (bambi_bucket_dynamics_edge, 'recurrence')[0]
     bambi_average_chosen_recurrence = average_dynamics \
-        (bambi_bucket_dynamics_chosen, 'recurrence')
+        (bambi_bucket_dynamics_chosen, 'recurrence')[0]
     a, s = probabilities_properties(nitzan_average_edge_recurrence)
     line1 = axx[0, 0].errorbar(arange(NUMBER_OF_SESSIONS), a, s, label='Phase 0')
     a, s = probabilities_properties(bambi_average_edge_recurrence)
@@ -702,9 +703,9 @@ def plot_all_bucket_dynamics(data):
 
     # For non edge cells
     nitzan_average_non_edge_recurrence = average_dynamics \
-        (nitzan_bucket_dynamics_non_edge, 'recurrence')
+        (nitzan_bucket_dynamics_non_edge, 'recurrence')[0]
     bambi_average_non_edge_recurrence = average_dynamics \
-        (bambi_bucket_dynamics_non_edge, 'recurrence')
+        (bambi_bucket_dynamics_non_edge, 'recurrence')[0]
     a, s = probabilities_properties(nitzan_average_non_edge_recurrence)
     axx[0, 1].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
     a, s = probabilities_properties(bambi_average_non_edge_recurrence)
@@ -715,11 +716,11 @@ def plot_all_bucket_dynamics(data):
     ###### plot ensamble correlation ######
     # For edge cells
     nitzan_average_edge_ensamble_correltaion = \
-        average_dynamics(nitzan_bucket_dynamics_edge, 'ensamble_correlation')
+        average_dynamics(nitzan_bucket_dynamics_edge, 'ensamble_correlation')[0]
     bambi_average_edge_ensamble_correltaion = \
-        average_dynamics(bambi_bucket_dynamics_edge, 'ensamble_correlation')
+        average_dynamics(bambi_bucket_dynamics_edge, 'ensamble_correlation')[0]
     bambi_average_chosen_ensamble_correltaion = \
-        average_dynamics(bambi_bucket_dynamics_chosen, 'ensamble_correlation')
+        average_dynamics(bambi_bucket_dynamics_chosen, 'ensamble_correlation')[0]
     a, s = probabilities_properties(nitzan_average_edge_ensamble_correltaion)
     axx[1, 0].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
     a, s = probabilities_properties(bambi_average_edge_ensamble_correltaion)
@@ -731,9 +732,9 @@ def plot_all_bucket_dynamics(data):
 
     # For non edge cells
     nitzan_average_non_edge_ensamble_correltaion = \
-        average_dynamics(nitzan_bucket_dynamics_non_edge, 'ensamble_correlation')
+        average_dynamics(nitzan_bucket_dynamics_non_edge, 'ensamble_correlation')[0]
     bambi_average_non_edge_ensamble_correltaion = \
-        average_dynamics(bambi_bucket_dynamics_non_edge, 'ensamble_correlation')
+        average_dynamics(bambi_bucket_dynamics_non_edge, 'ensamble_correlation')[0]
 
     a, s = probabilities_properties(nitzan_average_non_edge_ensamble_correltaion)
     axx[1, 1].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
@@ -892,11 +893,11 @@ def plot_all_track_dynamics(data): ##### EDIT THIS ####
     ###### plot recurrence ######
     # For edge cells
     nitzan_average_edge_recurrence = average_dynamics\
-        (nitzan_track_dynamics_edge, 'recurrence')
+        (nitzan_track_dynamics_edge, 'recurrence')[0]
     bambi_average_edge_recurrence = average_dynamics \
-        (bambi_track_dynamics_edge, 'recurrence')
+        (bambi_track_dynamics_edge, 'recurrence')[0]
     bambi_average_chosen_recurrence = average_dynamics \
-        (bambi_track_dynamics_chosen, 'recurrence')
+        (bambi_track_dynamics_chosen, 'recurrence')[0]
     a, s = probabilities_properties(nitzan_average_edge_recurrence)
     line1 = axx[0, 0].errorbar(arange(NUMBER_OF_SESSIONS), a, s, label='Phase 0')
     a, s = probabilities_properties(bambi_average_edge_recurrence)
@@ -912,9 +913,9 @@ def plot_all_track_dynamics(data): ##### EDIT THIS ####
 
     # For non edge cells
     nitzan_average_non_edge_recurrence = average_dynamics \
-        (nitzan_track_dynamics_non_edge, 'recurrence')
+        (nitzan_track_dynamics_non_edge, 'recurrence')[0]
     bambi_average_non_edge_recurrence = average_dynamics \
-        (bambi_track_dynamics_non_edge, 'recurrence')
+        (bambi_track_dynamics_non_edge, 'recurrence')[0]
     a, s = probabilities_properties(nitzan_average_non_edge_recurrence)
     line1 = axx[0, 1].errorbar(arange(NUMBER_OF_SESSIONS), a, s, label='Phase 0')
     a, s = probabilities_properties(bambi_average_non_edge_recurrence)
@@ -926,11 +927,11 @@ def plot_all_track_dynamics(data): ##### EDIT THIS ####
     ###### plot ensamble correlation ######
     # For edge cells
     nitzan_average_edge_ensamble_correltaion = \
-        average_dynamics(nitzan_track_dynamics_edge, 'ensamble_correlation')
+        average_dynamics(nitzan_track_dynamics_edge, 'ensamble_correlation')[0]
     bambi_average_edge_ensamble_correltaion = \
-        average_dynamics(bambi_track_dynamics_edge, 'ensamble_correlation')
+        average_dynamics(bambi_track_dynamics_edge, 'ensamble_correlation')[0]
     bambi_average_chosen_ensamble_correltaion = \
-        average_dynamics(bambi_track_dynamics_chosen, 'ensamble_correlation')
+        average_dynamics(bambi_track_dynamics_chosen, 'ensamble_correlation')[0]
     a, s = probabilities_properties(nitzan_average_edge_ensamble_correltaion)
     axx[1, 0].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
     a, s = probabilities_properties(bambi_average_edge_ensamble_correltaion)
@@ -942,9 +943,9 @@ def plot_all_track_dynamics(data): ##### EDIT THIS ####
 
     # For non edge cells
     nitzan_average_non_edge_ensamble_correltaion = \
-        average_dynamics(nitzan_track_dynamics_non_edge, 'ensamble_correlation')
+        average_dynamics(nitzan_track_dynamics_non_edge, 'ensamble_correlation')[0]
     bambi_average_non_edge_ensamble_correltaion = \
-        average_dynamics(bambi_track_dynamics_non_edge, 'ensamble_correlation')
+        average_dynamics(bambi_track_dynamics_non_edge, 'ensamble_correlation')[0]
 
     a, s = probabilities_properties(nitzan_average_non_edge_ensamble_correltaion)
     axx[1, 1].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
@@ -955,14 +956,14 @@ def plot_all_track_dynamics(data): ##### EDIT THIS ####
     ###### plot pv correlation ######
     # For edge cells
     nitzan_average_edge_pv_correltaion = \
-        gather_dynamics_by_reference(nitzan_track_dynamics_edge,
-                                     'pv_correlation')
+        average_dynamics(nitzan_track_dynamics_edge,
+                                     'pv_correlation')[0]
     bambi_average_edge_pv_correltaion = \
-        gather_dynamics_by_reference(bambi_track_dynamics_edge,
-                                     'pv_correlation')
+        average_dynamics(bambi_track_dynamics_edge,
+                                     'pv_correlation')[0]
     bambi_average_chosen_pv_correltaion = \
-        gather_dynamics_by_reference(bambi_track_dynamics_chosen,
-                                     'pv_correlation')
+        average_dynamics(bambi_track_dynamics_chosen,
+                                     'pv_correlation')[0]
 
     a, s = probabilities_properties(nitzan_average_edge_pv_correltaion)
     axx[2, 0].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
@@ -975,11 +976,11 @@ def plot_all_track_dynamics(data): ##### EDIT THIS ####
 
     # For non edge cells
     nitzan_average_non_edge_pv_correltaion = \
-        gather_dynamics_by_reference(nitzan_track_dynamics_non_edge,
-                                     'pv_correlation')
+        average_dynamics(nitzan_track_dynamics_non_edge,
+                                     'pv_correlation')[0]
     bambi_average_non_edge_pv_correltaion = \
-        gather_dynamics_by_reference(bambi_track_dynamics_non_edge,
-                                     'pv_correlation')
+        average_dynamics(bambi_track_dynamics_non_edge,
+                                     'pv_correlation')[0]
 
     a, s = probabilities_properties(
         nitzan_average_non_edge_pv_correltaion)
