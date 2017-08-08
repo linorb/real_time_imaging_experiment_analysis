@@ -106,9 +106,16 @@ ENV/
 # Text
 *.txt
 
+#Matlab
+*.mat
+
+#Excel
+*.csv
+
 # PyCharm
 .idea/
 
 # Results folders
 reconstructing_traces_for_all_roi/
 phase_1_preprocessed/
+figures/~$l results.docx
