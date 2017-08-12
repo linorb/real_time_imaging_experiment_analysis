@@ -7,9 +7,10 @@ import cPickle
 
 import numpy as np
 import scipy.io as sio
+from matplotlib.pyplot import *
 
-from real_time_imaging.tools.activity_loading import *
-from real_time_imaging.tools.matlab import *
+from bambi.tools.activity_loading import *
+from bambi.tools.matlab import *
 
 MOUSE = '3'
 CAGE = '40'
@@ -28,26 +29,28 @@ BUCKET_EXPERIMENT_DATES = ['20170305',
                            '20170309']
 
 DAYS = range(4, 9)
-# FOR C40M3:
-CHOSEN_CELLS = np.array([36, 53, 80, 89, 158, 181, 195, 229, 258,
-                         290, 321, 336, 339, 357, 366, 392, 394,
-                         399, 408, 439, 446, 448, 449, 465, 490])
 
-# FOR C40M6:
-# CHOSEN_CELLS = np.array([44, 61, 78, 96, 154, 157, 172, 195,
-#                          214, 226, 244, 247, 259, 261, 262,
-#                          286, 287, 290, 301, 303, 314, 337,
-#                          340, 346, 348, 368, 372, 374, 383,
-#                          389, 391, 407, 415, 418, 419, 448,
-#                          448, 460, 472, 473, 474, 479, 488,
-#                          501, 517, 569])
+if MOUSE =='3':
+    # FOR C40M3:
+    CHOSEN_CELLS = np.array([36, 53, 80, 89, 158, 181, 195, 229, 258,
+                             290, 321, 336, 339, 357, 366, 392, 394,
+                             399, 408, 439, 446, 448, 449, 465, 490])
+else:
+    # FOR C40M6:
+    CHOSEN_CELLS = np.array([44, 61, 78, 96, 154, 157, 172, 195,
+                         214, 226, 244, 247, 259, 261, 262,
+                         286, 287, 290, 301, 303, 314, 337,
+                         340, 346, 348, 368, 372, 374, 383,
+                         389, 391, 407, 415, 418, 419, 448,
+                         448, 460, 472, 473, 474, 479, 488,
+                         501, 517, 569])
 
 
 NUMBER_OF_ACTIVE_ROIS = 2
 NUMBER_OF_PERMUTATIONS = 1000
 F0_FRAMES = 200
 MIDDLE_TRIALS_INDICES = range(1,5)
-EDGE_BINS = [0, 1, 2, 8, 9]
+EDGE_BINS = [0, 9]
 
 def create_output_directory(dirname):
     try:
@@ -242,6 +245,15 @@ def calculate_p_correct_for_session(all_session_events, bins, number_of_active_r
     number_of_activations = np.sum(all_session_events, axis=0)
     active_frames_indices = number_of_activations > number_of_active_rois
     activated_bins = bins[active_frames_indices]
+
+    figure()
+    plot(bins + 1, 'b', label='Tracking behavior')
+    plot((bins+ 1)*active_frames_indices, 'ro', label='Active frame')
+    ylim(0.5, 11)
+    ylabel('# Bin')
+    xlabel('# Frame')
+    legend()
+    show()
 
     correct_activations = np.zeros(activated_bins.shape, dtype=bool)
     for bin in edge_bins:
@@ -451,3 +463,6 @@ def main4():
         session_path = REAL_TIME_PATH %(dir_name, CAGE, MOUSE)
         create_full_session_water_frames(session_path, MIDDLE_TRIALS_INDICES)
 
+
+if __name__ == '__main__':
+    main2()

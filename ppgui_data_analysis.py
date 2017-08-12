@@ -515,7 +515,7 @@ def plot_dynamics(first_bucket_sessions_dynamics, last_bucket_sessions_dynamics,
                   name):
     # plot recurrence
     f, axx = plt.subplots(5, 1, sharey=True, sharex=True, figsize=(15, 10))
-    f.suptitle('Recurrence Probability ' + name, fontsize=14)
+    f.suptitle('Recurrence Probability ' + name, fontsize=20)
     f.tight_layout()
     f.subplots_adjust(top=0.9)
 
@@ -530,7 +530,7 @@ def plot_dynamics(first_bucket_sessions_dynamics, last_bucket_sessions_dynamics,
 
     # plot event rate
     f, axx = plt.subplots(5, 1, sharey=True, sharex=True, figsize=(15, 10))
-    f.suptitle('Event rate ' + name, fontsize=14)
+    f.suptitle('Event rate ' + name, fontsize=25)
     f.tight_layout()
     f.subplots_adjust(top=0.9)
 
@@ -547,7 +547,7 @@ def plot_dynamics(first_bucket_sessions_dynamics, last_bucket_sessions_dynamics,
 
     # plot ensamble correlation
     f, axx = plt.subplots(5, 1, sharey=True, sharex=True, figsize=(15, 10))
-    f.suptitle('Ensamble correlation ' + name, fontsize=14)
+    f.suptitle('Ensamble correlation ' + name, fontsize=20)
     f.tight_layout()
     f.subplots_adjust(top=0.9)
 
@@ -586,7 +586,7 @@ def plot_average_recurrence(first_bucket_sessions_dynamics,
     last_bucket_average = average_dynamics(last_bucket_sessions_dynamics, 'recurrence')
 
     f, axx = plt.subplots(1, 1, sharey=True, sharex=True, figsize=(15, 10))
-    f.suptitle('Recurrence Probability ' + name, fontsize=14)
+    f.suptitle('Recurrence Probability ' + name, fontsize=20)
     f.tight_layout()
     f.subplots_adjust(top=0.9)
 
@@ -611,7 +611,7 @@ def plot_compare_average(nitzan_bucket_session_dynamics,
         nitzan_average = np.mean(np.stack(nitzan_average, axis=2), axis=2)
         bambi_average = np.mean(np.stack(bambi_average, axis=2), axis=2)
         f, axx = plt.subplots(1, 1, sharey=True, sharex=True, figsize=(15, 10))
-        f.suptitle(field_name, fontsize=14)
+        f.suptitle(field_name, fontsize=20)
         f.tight_layout()
         f.subplots_adjust(top=0.9)
         a, s = probabilities_properties(nitzan_average)
@@ -651,7 +651,7 @@ def plot_compare_average(nitzan_bucket_session_dynamics,
         bambi_no_zeros_std = np.nanstd(bambi_concatenated_field, axis=0)
 
         f, axx = plt.subplots(3, 1, sharex=True, figsize=(15, 10))
-        f.suptitle(field_name, fontsize=14)
+        f.suptitle(field_name, fontsize=20)
         f.tight_layout()
         f.subplots_adjust(top=0.9)
         line1 = axx[0].errorbar(arange(NUMBER_OF_SESSIONS), nitzan_average, nitzan_std)
@@ -705,172 +705,6 @@ def plot_chosen_cells_participance(data):
     f.show()
     return
 
-# def plot_all_bucket_dynamics(data):
-#     nitzan_bucket_dynamics_edge = \
-#         analyze_bucket_dynamics(data['nitzan'], 'edge_cells')
-#     bambi_bucket_dynamics_edge = \
-#         analyze_bucket_dynamics(data['bambi'], 'edge_cells')
-#     nitzan_bucket_dynamics_non_edge = \
-#         analyze_bucket_dynamics(data['nitzan'], 'non_edge_cells')
-#     bambi_bucket_dynamics_non_edge = \
-#         analyze_bucket_dynamics(data['bambi'], 'non_edge_cells')
-#     bambi_bucket_dynamics_chosen = \
-#         analyze_bucket_dynamics(data['bambi'], 'chosen_rois')
-#
-#     f, axx = subplots(3, 2, sharey='row', sharex='row')
-#     f.subplots_adjust(top=0.9)
-#     ###### plot recurrence ######
-#     # For edge cells
-#     nitzan_average_edge_recurrence = average_dynamics\
-#         (nitzan_bucket_dynamics_edge, 'recurrence')[0]
-#     bambi_average_edge_recurrence = average_dynamics \
-#         (bambi_bucket_dynamics_edge, 'recurrence')[0]
-#     bambi_average_chosen_recurrence = average_dynamics \
-#         (bambi_bucket_dynamics_chosen, 'recurrence')[0]
-#     a, s = probabilities_properties(nitzan_average_edge_recurrence)
-#     line1 = axx[0, 0].errorbar(arange(NUMBER_OF_SESSIONS), a, s, label='Phase 0')
-#     a, s = probabilities_properties(bambi_average_edge_recurrence)
-#     line2 = axx[0, 0].errorbar(arange(NUMBER_OF_SESSIONS), a, s, label='Phase 1')
-#     a, s = probabilities_properties(bambi_average_chosen_recurrence)
-#     line3 = axx[0, 0].errorbar(arange(NUMBER_OF_SESSIONS), a, s, label='Phase 1 - chosen cells')
-#     axx[0, 0].set_ylabel('Recurrence',fontsize=14)
-#     axx[0, 0].set_title('Edge cells', fontsize=20)
-#     axx[0, 0].set_xlabel('Session difference', fontsize=14)
-#     legend(bbox_to_anchor=(1.3, 1.2),
-#            handles=[line1, line2, line3], fontsize=14)
-#
-#     # For non edge cells
-#     nitzan_average_non_edge_recurrence = average_dynamics \
-#         (nitzan_bucket_dynamics_non_edge, 'recurrence')[0]
-#     bambi_average_non_edge_recurrence = average_dynamics \
-#         (bambi_bucket_dynamics_non_edge, 'recurrence')[0]
-#     a, s = probabilities_properties(nitzan_average_non_edge_recurrence)
-#     axx[0, 1].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
-#     a, s = probabilities_properties(bambi_average_non_edge_recurrence)
-#     axx[0, 1].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
-#     axx[0, 1].set_title('Non edge cells', fontsize=20)
-#     axx[0, 1].set_xlabel('Session difference', fontsize=14)
-#
-#     ###### plot ensamble correlation ######
-#     # For edge cells
-#     nitzan_average_edge_ensamble_correltaion = \
-#         average_dynamics(nitzan_bucket_dynamics_edge, 'ensamble_correlation')[0]
-#     bambi_average_edge_ensamble_correltaion = \
-#         average_dynamics(bambi_bucket_dynamics_edge, 'ensamble_correlation')[0]
-#     bambi_average_chosen_ensamble_correltaion = \
-#         average_dynamics(bambi_bucket_dynamics_chosen, 'ensamble_correlation')[0]
-#     a, s = probabilities_properties(nitzan_average_edge_ensamble_correltaion)
-#     axx[1, 0].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
-#     a, s = probabilities_properties(bambi_average_edge_ensamble_correltaion)
-#     axx[1, 0].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
-#     a, s = probabilities_properties(bambi_average_chosen_ensamble_correltaion)
-#     axx[1, 0].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
-#     axx[1, 0].set_ylabel('Ensamble correlation', fontsize=14)
-#     axx[1, 0].set_xlabel('Session difference', fontsize=14)
-#
-#     # For non edge cells
-#     nitzan_average_non_edge_ensamble_correltaion = \
-#         average_dynamics(nitzan_bucket_dynamics_non_edge, 'ensamble_correlation')[0]
-#     bambi_average_non_edge_ensamble_correltaion = \
-#         average_dynamics(bambi_bucket_dynamics_non_edge, 'ensamble_correlation')[0]
-#
-#     a, s = probabilities_properties(nitzan_average_non_edge_ensamble_correltaion)
-#     axx[1, 1].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
-#     a, s = probabilities_properties(bambi_average_non_edge_ensamble_correltaion)
-#     axx[1, 1].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
-#     axx[1, 1].set_xlabel('Session difference', fontsize=14)
-#
-#     ###### plot number of events and cells ######
-#     # for edge cells
-#     nitzan_edge_event_rate = []
-#     nitzan_number_of_cells = []
-#     # count the event rate only in active cells
-#     for j, session in enumerate(nitzan_bucket_dynamics_edge):
-#         nitzan_edge_event_rate.append(session['events_rate'])
-#         nitzan_number_of_cells.append(
-#             np.count_nonzero(session['events_rate'][:, j]))
-#
-#     bambi_edge_event_rate = []
-#     bambi_number_of_cells = []
-#     for j, session in enumerate(bambi_bucket_dynamics_edge):
-#         bambi_edge_event_rate.append(session['events_rate'])
-#         bambi_number_of_cells.append(
-#             np.count_nonzero(session['events_rate'][:, j]))
-#
-#     bambi_chosen_event_rate = []
-#     for j, session in enumerate(bambi_bucket_dynamics_chosen):
-#         bambi_chosen_event_rate.append(session['events_rate'])
-#
-#     nitzan_edge_event_rate = np.vstack(nitzan_edge_event_rate)
-#     bambi_edge_event_rate = np.vstack(bambi_edge_event_rate)
-#     bambi_chosen_event_rate = np.vstack(bambi_chosen_event_rate)
-#     nitzan_edge_event_rate[nitzan_edge_event_rate == 0] = nan
-#     bambi_edge_event_rate[bambi_edge_event_rate == 0] = nan
-#     bambi_chosen_event_rate[bambi_chosen_event_rate == 0] = nan
-#     nitzan_average_edge_event_rate = np.nanmean(nitzan_edge_event_rate, axis=0)
-#     bambi_average_edge_event_rate = np.nanmean(bambi_edge_event_rate, axis=0)
-#     bambi_average_chosen_event_rate = np.nanmean(bambi_chosen_event_rate, axis=0)
-#     nitzan_std_edge_event_rate = np.nanstd(nitzan_edge_event_rate, axis=0)
-#     bambi_std_edge_event_rate = np.nanstd(bambi_edge_event_rate, axis=0)
-#     bambi_std_chosen_event_rate = np.nanstd(bambi_chosen_event_rate, axis=0)
-#
-#     axx[2, 0].errorbar(arange(NUMBER_OF_SESSIONS), nitzan_average_edge_event_rate,
-#                        nitzan_std_edge_event_rate)
-#     axx[2, 0].errorbar(arange(NUMBER_OF_SESSIONS), bambi_average_edge_event_rate,
-#                        bambi_std_edge_event_rate)
-#     axx[2, 0].errorbar(arange(NUMBER_OF_SESSIONS),
-#                        bambi_average_chosen_event_rate,
-#                        bambi_std_chosen_event_rate)
-#     axx[2, 0].set_ylabel('Number of events', fontsize=14)
-#     axx[2, 0].set_xlabel('Session number', fontsize=14)
-#
-#     # For non edge cells
-#     nitzan_non_edge_event_rate = []
-#     nitzan_number_of_cells = []
-#     # count the event rate only in active cells
-#     for j, session in enumerate(nitzan_bucket_dynamics_non_edge):
-#         nitzan_non_edge_event_rate.append(session['events_rate'])
-#         nitzan_number_of_cells.append(
-#             np.count_nonzero(session['events_rate'][:, j]))
-#
-#     bambi_non_edge_event_rate = []
-#     bambi_number_of_cells = []
-#     for j, session in enumerate(bambi_bucket_dynamics_non_edge):
-#         bambi_non_edge_event_rate.append(session['events_rate'])
-#         bambi_number_of_cells.append(
-#             np.count_nonzero(session['events_rate'][:, j]))
-#
-#     nitzan_non_edge_event_rate = np.vstack(nitzan_non_edge_event_rate)
-#     bambi_non_edge_event_rate = np.vstack(bambi_non_edge_event_rate)
-#     nitzan_non_edge_event_rate[nitzan_non_edge_event_rate == 0] = nan
-#     bambi_non_edge_event_rate[bambi_non_edge_event_rate == 0] = nan
-#     nitzan_average_non_edge_event_rate = np.nanmean(nitzan_non_edge_event_rate, axis=0)
-#     bambi_average_non_edge_event_rate = np.nanmean(bambi_non_edge_event_rate, axis=0)
-#     nitzan_std_non_edge_event_rate = np.nanstd(nitzan_non_edge_event_rate, axis=0)
-#     bambi_std_non_edge_event_rate = np.nanstd(bambi_non_edge_event_rate, axis=0)
-#
-#     axx[2, 1].errorbar(arange(NUMBER_OF_SESSIONS),
-#                        nitzan_average_non_edge_event_rate,
-#                        nitzan_std_non_edge_event_rate)
-#     axx[2, 1].errorbar(arange(NUMBER_OF_SESSIONS),
-#                        bambi_average_non_edge_event_rate,
-#                        bambi_std_non_edge_event_rate)
-#     axx[2, 1].set_xlabel('Session number', fontsize=14)
-#
-#     setp(axx, xticks=range(5), xticklabels=['1', '2', '3', '4', '5'])
-#     for i in range(3):
-#         for j in range(2):
-#             for xtick in axx[i, j].xaxis.get_major_ticks():
-#                 xtick.label.set_fontsize(14)
-#             for ytick in axx[i, j].yaxis.get_major_ticks():
-#                 ytick.label.set_fontsize(14)
-#             box = axx[i, j].get_position()
-#             axx[i, j].set_position([box.x0, box.y0 + box.height * 0.2,
-#                                  box.width, box.height * 0.8])
-#     f.suptitle('C%sM%s' %(CAGE, MOUSE), fontsize=25)
-#     f.show()
-#     return
-
 def plot_all_bucket_dynamics(data): ##### EDIT THIS ####
     nitzan_bucket_dynamics_edge = \
         analyze_bucket_dynamics(data['nitzan'], 'edge_cells')
@@ -895,10 +729,10 @@ def plot_all_bucket_dynamics(data): ##### EDIT THIS ####
     axx[0, 0].errorbar(arange(NUMBER_OF_SESSIONS), a, s, label='Phase 0')
     a, s = probabilities_properties(nitzan_average_non_edge_recurrence)
     axx[0, 0].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
-    axx[0, 0].set_ylabel('Recurrence',fontsize=14)
+    axx[0, 0].set_ylabel('Recurrence',fontsize=20)
     axx[0, 0].set_title('Phase 0', fontsize=20)
-    axx[0, 0].set_xlabel('Session difference', fontsize=14)
-
+    axx[0, 0].set_xlabel('Session difference', fontsize=20)
+    axx[0, 0].locator_params(axis='y', nbins=5)
     # For Phase 1
 
     bambi_average_edge_recurrence = average_dynamics \
@@ -917,10 +751,10 @@ def plot_all_bucket_dynamics(data): ##### EDIT THIS ####
     line2 = axx[0, 1].errorbar(arange(NUMBER_OF_SESSIONS), a, s,
                                label='Chosen cells')
     axx[0, 1].set_title('Phase 1', fontsize=20)
-    axx[0, 1].set_xlabel('Session difference', fontsize=14)
+    axx[0, 1].set_xlabel('Session difference', fontsize=20)
     axx[0, 1].set_xticks(np.arange(NUMBER_OF_SESSIONS))
-    legend(bbox_to_anchor=(1.3, 1.2),
-           handles=[line1, line2, line3], fontsize=14)
+    legend(bbox_to_anchor=(1, -0.25),
+           handles=[line1, line2, line3], fontsize=16)
 
     ###### plot ensamble correlation ######
     # For phase 0
@@ -935,9 +769,9 @@ def plot_all_bucket_dynamics(data): ##### EDIT THIS ####
     a, s = probabilities_properties(
         nitzan_average_non_edge_ensamble_correltaion)
     axx[1, 0].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
-    axx[1, 0].set_ylabel('Ensamble correlation', fontsize=14)
-    axx[1, 0].set_xlabel('Session difference', fontsize=14)
-
+    axx[1, 0].set_ylabel('Ensamble correlation', fontsize=20)
+    axx[1, 0].set_xlabel('Session difference', fontsize=20)
+    axx[1, 0].locator_params(axis='y', nbins=5)
     # For Phase 1
     bambi_average_edge_ensamble_correltaion = \
         average_dynamics(bambi_bucket_dynamics_edge, 'ensamble_correlation')[0]
@@ -952,7 +786,7 @@ def plot_all_bucket_dynamics(data): ##### EDIT THIS ####
     axx[1, 1].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
     a, s = probabilities_properties(bambi_average_chosen_ensamble_correltaion)
     axx[1, 1].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
-    axx[1, 1].set_xlabel('Session difference', fontsize=14)
+    axx[1, 1].set_xlabel('Session difference', fontsize=20)
 
     ###### plot number of events and cells ######
     # for phase 0
@@ -982,9 +816,9 @@ def plot_all_bucket_dynamics(data): ##### EDIT THIS ####
                        nitzan_average_non_edge_event_rate,
                        nitzan_std_non_edge_event_rate)
 
-    axx[2, 0].set_ylabel('Number of events', fontsize=14)
-    axx[2, 0].set_xlabel('Session number', fontsize=14)
-
+    axx[2, 0].set_ylabel('Number of events', fontsize=20)
+    axx[2, 0].set_xlabel('Session number', fontsize=20)
+    axx[2, 0].locator_params(axis='y', nbins=5)
     # phase 1
     bambi_edge_event_rate = []
     for j, session in enumerate(bambi_bucket_dynamics_edge):
@@ -1022,19 +856,20 @@ def plot_all_bucket_dynamics(data): ##### EDIT THIS ####
     axx[2, 1].errorbar(arange(NUMBER_OF_SESSIONS),
                        bambi_average_non_edge_event_rate,
                        bambi_std_non_edge_event_rate)
-    axx[2, 1].set_xlabel('Session number', fontsize=14)
+    axx[2, 1].set_xlabel('Session number', fontsize=20)
     setp(axx, xticks=range(5))
     setp(axx[2,1], xticklabels=['1', '2', '3', '4', '5'])
+    locator_params(axis='y', nticks=6)
     for i in range(3):
         for j in range(2):
             for xtick in axx[i, j].xaxis.get_major_ticks():
-                xtick.label.set_fontsize(14)
+                xtick.label.set_fontsize(20)
             for ytick in axx[i, j].yaxis.get_major_ticks():
-                ytick.label.set_fontsize(14)
+                ytick.label.set_fontsize(20)
             box = axx[i, j].get_position()
             axx[i, j].set_position([box.x0, box.y0 + box.height * 0.2,
                                  box.width, box.height * 0.8])
-    f.suptitle('C%sM%s' %(CAGE, MOUSE), fontsize=25)
+    f.suptitle('C%sM%s' %(CAGE, MOUSE), fontsize=20)
     f.show()
     return
 
@@ -1105,10 +940,10 @@ def plot_all_track_dynamics(data): ##### EDIT THIS ####
     axx[0, 0].errorbar(arange(NUMBER_OF_SESSIONS), a, s, label='Phase 0')
     a, s = probabilities_properties(nitzan_average_non_edge_recurrence)
     axx[0, 0].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
-    axx[0, 0].set_ylabel('Recurrence',fontsize=14)
+    axx[0, 0].set_ylabel('Recurrence',fontsize=20)
     axx[0, 0].set_title('Phase 0', fontsize=20)
-    axx[0, 0].set_xlabel('Session difference', fontsize=14)
-
+    axx[0, 0].set_xlabel('Session difference', fontsize=20)
+    axx[0, 0].locator_params(axis='y', nbins=5)
     # For Phase 1
 
     bambi_average_edge_recurrence = average_dynamics \
@@ -1127,10 +962,10 @@ def plot_all_track_dynamics(data): ##### EDIT THIS ####
     line2 = axx[0, 1].errorbar(arange(NUMBER_OF_SESSIONS), a, s,
                                label='Chosen cells')
     axx[0, 1].set_title('Phase 1', fontsize=20)
-    axx[0, 1].set_xlabel('Session difference', fontsize=14)
+    axx[0, 1].set_xlabel('Session difference', fontsize=20)
     axx[0, 1].set_xticks(np.arange(NUMBER_OF_SESSIONS))
-    legend(bbox_to_anchor=(1.3, 1.2),
-           handles=[line1, line2, line3], fontsize=14)
+    legend(bbox_to_anchor=(1, -0.3),
+           handles=[line1, line2, line3], fontsize=16)
 
     ###### plot ensamble correlation ######
     # For phase 0
@@ -1145,9 +980,9 @@ def plot_all_track_dynamics(data): ##### EDIT THIS ####
     a, s = probabilities_properties(
         nitzan_average_non_edge_ensamble_correltaion)
     axx[1, 0].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
-    axx[1, 0].set_ylabel('Ensamble correlation', fontsize=14)
-    axx[1, 0].set_xlabel('Session difference', fontsize=14)
-
+    axx[1, 0].set_ylabel('Ensamble correlation', fontsize=20)
+    axx[1, 0].set_xlabel('Session difference', fontsize=20)
+    axx[1, 0].locator_params(axis='y', nbins=5)
     # For Phase 1
     bambi_average_edge_ensamble_correltaion = \
         average_dynamics(bambi_track_dynamics_edge, 'ensamble_correlation')[0]
@@ -1162,7 +997,7 @@ def plot_all_track_dynamics(data): ##### EDIT THIS ####
     axx[1, 1].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
     a, s = probabilities_properties(bambi_average_chosen_ensamble_correltaion)
     axx[1, 1].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
-    axx[1, 1].set_xlabel('Session difference', fontsize=14)
+    axx[1, 1].set_xlabel('Session difference', fontsize=20)
 
     ###### plot pv correlation ######
     # For phase 0
@@ -1178,9 +1013,9 @@ def plot_all_track_dynamics(data): ##### EDIT THIS ####
     a, s = probabilities_properties(
         nitzan_average_non_edge_pv_correltaion)
     axx[2, 0].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
-    axx[2, 0].set_ylabel('PV correlation', fontsize=14)
-    axx[2, 0].set_xlabel('Session difference', fontsize=14)
-
+    axx[2, 0].set_ylabel('PV correlation', fontsize=20)
+    axx[2, 0].set_xlabel('Session difference', fontsize=20)
+    axx[2, 0].locator_params(axis='y', nbins=5)
     # For phase 1
     bambi_average_edge_pv_correltaion = \
         average_dynamics(bambi_track_dynamics_edge,
@@ -1198,7 +1033,7 @@ def plot_all_track_dynamics(data): ##### EDIT THIS ####
     axx[2, 1].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
     a, s = probabilities_properties(bambi_average_chosen_pv_correltaion)
     axx[2, 1].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
-    axx[2, 1].set_xlabel('Session difference', fontsize=14)
+    axx[2, 1].set_xlabel('Session difference', fontsize=20)
 
 
     ###### plot number of events and cells ######
@@ -1229,9 +1064,9 @@ def plot_all_track_dynamics(data): ##### EDIT THIS ####
                        nitzan_average_non_edge_event_rate,
                        nitzan_std_non_edge_event_rate)
 
-    axx[3, 0].set_ylabel('Number of events', fontsize=14)
-    axx[3, 0].set_xlabel('Session number', fontsize=14)
-
+    axx[3, 0].set_ylabel('Number of events', fontsize=20)
+    axx[3, 0].set_xlabel('Session number', fontsize=20)
+    axx[3, 0].locator_params(axis='y', nbins=5)
     # phase 1
     bambi_edge_event_rate = []
     for j, session in enumerate(bambi_track_dynamics_edge):
@@ -1269,19 +1104,19 @@ def plot_all_track_dynamics(data): ##### EDIT THIS ####
     axx[3, 1].errorbar(arange(NUMBER_OF_SESSIONS),
                        bambi_average_non_edge_event_rate,
                        bambi_std_non_edge_event_rate)
-    axx[3, 1].set_xlabel('Session number', fontsize=14)
+    axx[3, 1].set_xlabel('Session number', fontsize=20)
     setp(axx, xticks=range(5))
     setp(axx[3,1], xticklabels=['1', '2', '3', '4', '5'])
     for i in range(4):
         for j in range(2):
             for xtick in axx[i, j].xaxis.get_major_ticks():
-                xtick.label.set_fontsize(14)
+                xtick.label.set_fontsize(20)
             for ytick in axx[i, j].yaxis.get_major_ticks():
-                ytick.label.set_fontsize(14)
+                ytick.label.set_fontsize(20)
             box = axx[i, j].get_position()
             axx[i, j].set_position([box.x0, box.y0 + box.height * 0.2,
                                  box.width, box.height * 0.8])
-    f.suptitle('C%sM%s' %(CAGE, MOUSE), fontsize=25)
+    f.suptitle('C%sM%s' %(CAGE, MOUSE), fontsize=20)
     f.show()
     return
 
@@ -1319,11 +1154,11 @@ def plot_recurrence_for_consecutive_days(data):
     s = diagonal(bambi_average_chosen_recurrence[1], offset=1)
     line3 = axx[0, 0].errorbar(arange(1, NUMBER_OF_SESSIONS), a, s,
                                label='Phase 1 - chosen cells')
-    axx[0, 0].set_ylabel('Bucket consecutive recurrence', fontsize=14)
+    axx[0, 0].set_ylabel('Bucket consecutive recurrence', fontsize=20)
     axx[0, 0].set_title('Edge cells', fontsize=20)
-    axx[0, 0].set_xlabel('#Session', fontsize=14)
-    legend(bbox_to_anchor=(1.3, 1.2),
-           handles=[line1, line2, line3], fontsize=14)
+    axx[0, 0].set_xlabel('#Session', fontsize=20)
+    legend(bbox_to_anchor=(1, -0.25),
+           handles=[line1, line2, line3], fontsize=20)
 
     # For non edge cells
     nitzan_average_non_edge_recurrence = average_dynamics \
@@ -1337,7 +1172,7 @@ def plot_recurrence_for_consecutive_days(data):
     s = diagonal(bambi_average_non_edge_recurrence[1], offset=1)
     axx[0, 1].errorbar(arange(1, NUMBER_OF_SESSIONS), a, s)
     axx[0, 1].set_title('Non edge cells', fontsize=20)
-    axx[0, 1].set_xlabel('#Session', fontsize=14)
+    axx[0, 1].set_xlabel('#Session', fontsize=20)
 
     # Track dynamics
     nitzan_track_dynamics_edge = \
@@ -1368,9 +1203,9 @@ def plot_recurrence_for_consecutive_days(data):
     a = diagonal(bambi_average_chosen_recurrence[0], offset=1)
     s = diagonal(bambi_average_chosen_recurrence[1], offset=1)
     axx[1, 0].errorbar(arange(1, NUMBER_OF_SESSIONS), a, s)
-    axx[1, 0].set_ylabel('Track consecutive recurrence', fontsize=14)
+    axx[1, 0].set_ylabel('Track consecutive recurrence', fontsize=20)
     axx[1, 0].set_title('Edge cells', fontsize=20)
-    axx[1, 0].set_xlabel('#Session', fontsize=14)
+    axx[1, 0].set_xlabel('#Session', fontsize=20)
 
     # For non edge cells
     nitzan_average_non_edge_recurrence = average_dynamics \
@@ -1383,9 +1218,9 @@ def plot_recurrence_for_consecutive_days(data):
     a = diagonal(bambi_average_non_edge_recurrence[0], offset=1)
     s = diagonal(bambi_average_non_edge_recurrence[1], offset=1)
     axx[1, 1].errorbar(arange(1, NUMBER_OF_SESSIONS), a, s)
-    axx[1, 1].set_xlabel('#Session', fontsize=14)
+    axx[1, 1].set_xlabel('#Session', fontsize=20)
 
-    f.suptitle('C%sM%s' %(CAGE, MOUSE), fontsize=25)
+    f.suptitle('C%sM%s' %(CAGE, MOUSE), fontsize=20)
     f.show()
     return
 

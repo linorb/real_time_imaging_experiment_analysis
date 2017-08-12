@@ -186,10 +186,10 @@ def plot_all_track_dynamics(data): ##### EDIT THIS ####
     line2 = axx[0].errorbar(arange(NUMBER_OF_SESSIONS), a, s,
                             label='chosen cells')
 
-    axx[0].set_ylabel('Recurrence',fontsize=14)
-    axx[0].set_xlabel('Session difference', fontsize=14)
-    legend(bbox_to_anchor=(1.05, 1.),
-           handles=[line1, line3, line2], fontsize=14)
+    axx[0].set_ylabel('Recurrence',fontsize=20)
+    axx[0].set_xlabel('Session difference', fontsize=20)
+    legend(bbox_to_anchor=(1, -0.2),
+           handles=[line1, line3, line2], fontsize=20)
 
     ###### plot ensamble correlation ######
     # For edge cells
@@ -209,9 +209,9 @@ def plot_all_track_dynamics(data): ##### EDIT THIS ####
     a, s = pda.probabilities_properties(bambi_average_chosen_ensamble_correltaion)
     axx[1].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
 
-    axx[1].set_ylabel('Ensamble correlation', fontsize=14)
-    axx[1].set_xlabel('Session difference', fontsize=14)
-
+    axx[1].set_ylabel('Ensamble correlation', fontsize=20)
+    axx[1].set_xlabel('Session difference', fontsize=20)
+    axx[1].set_ylim(-0.1, 1)
     ###### plot pv correlation ######
     # For edge cells
     bambi_average_edge_pv_correltaion = \
@@ -232,8 +232,8 @@ def plot_all_track_dynamics(data): ##### EDIT THIS ####
     a, s = pda.probabilities_properties(bambi_average_chosen_pv_correltaion)
     axx[2].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
 
-    axx[2].set_ylabel('PV correlation', fontsize=14)
-    axx[2].set_xlabel('Session difference', fontsize=14)
+    axx[2].set_ylabel('PV correlation', fontsize=20)
+    axx[2].set_xlabel('Session difference', fontsize=20)
 
     ###### plot number of events and cells ######
     # for edge cells
@@ -260,8 +260,8 @@ def plot_all_track_dynamics(data): ##### EDIT THIS ####
 
     axx[3].errorbar(arange(NUMBER_OF_SESSIONS), bambi_average_edge_event_rate,
                        bambi_std_edge_event_rate)
-    axx[3].set_ylabel('Number of events', fontsize=14)
-    axx[3].set_xlabel('Session number', fontsize=14)
+    axx[3].set_ylabel('Number of events', fontsize=20)
+    axx[3].set_xlabel('Session number', fontsize=20)
 
     # For non edge cells
     bambi_non_edge_event_rate = []
@@ -286,9 +286,9 @@ def plot_all_track_dynamics(data): ##### EDIT THIS ####
     setp(axx[3], xticklabels=['1', '2', '3', '4', '5'])
     for i in range(4):
         for xtick in axx[i].xaxis.get_major_ticks():
-            xtick.label.set_fontsize(14)
+            xtick.label.set_fontsize(20)
         for ytick in axx[i].yaxis.get_major_ticks():
-            ytick.label.set_fontsize(14)
+            ytick.label.set_fontsize(20)
         box = axx[i].get_position()
         axx[i].set_position([box.x0, box.y0 + box.height * 0.2,
                              box.width, box.height * 0.8])
@@ -341,7 +341,7 @@ def plot_all_bucket_dynamics(data):  ##### EDIT THIS ####
     bambi_track_dynamics_chosen = \
         analyze_bucket_dynamics(data, 'chosen_rois')
 
-    f, axx = subplots(3, 1, sharey='row', sharex='row')
+    f, axx = subplots(3, 1, sharey='row')
     f.subplots_adjust(top=0.9)
     ###### plot recurrence ######
     # For edge cells
@@ -362,10 +362,11 @@ def plot_all_bucket_dynamics(data):  ##### EDIT THIS ####
     line2 = axx[0].errorbar(arange(NUMBER_OF_SESSIONS), a, s,
                             label='chosen cells')
 
-    axx[0].set_ylabel('Recurrence', fontsize=14)
-    axx[0].set_xlabel('Session difference', fontsize=14)
-    legend(bbox_to_anchor=(1.05, 1.),
-           handles=[line1, line3, line2], fontsize=14)
+    axx[0].set_ylabel('Recurrence', fontsize=20)
+    axx[0].set_xlabel('Session difference', fontsize=20)
+    axx[0].locator_params(axis='y', nbins=5)
+    legend(bbox_to_anchor=(1, -0.2),
+           handles=[line1, line3, line2], fontsize=20)
 
     ###### plot ensamble correlation ######
     # For edge cells
@@ -387,9 +388,10 @@ def plot_all_bucket_dynamics(data):  ##### EDIT THIS ####
     a, s = pda.probabilities_properties(
         bambi_average_chosen_ensamble_correltaion)
     axx[1].errorbar(arange(NUMBER_OF_SESSIONS), a, s)
-    axx[1].set_ylabel('Ensamble correlation', fontsize=14)
-    axx[1].set_xlabel('Session difference', fontsize=14)
-
+    axx[1].set_ylabel('Ensamble correlation', fontsize=20)
+    axx[1].set_xlabel('Session difference', fontsize=20)
+    axx[1].locator_params(axis='y', nbins=5)
+    axx[1].set_ylim(-0.1, 1)
     ###### plot number of events and cells ######
     # for edge cells
 
@@ -416,8 +418,9 @@ def plot_all_bucket_dynamics(data):  ##### EDIT THIS ####
 
     axx[2].errorbar(arange(NUMBER_OF_SESSIONS), bambi_average_edge_event_rate,
                     bambi_std_edge_event_rate)
-    axx[2].set_ylabel('Number of events', fontsize=14)
-    axx[2].set_xlabel('Session number', fontsize=14)
+    axx[2].set_ylabel('Number of events', fontsize=20)
+    axx[2].set_xlabel('Session number', fontsize=20)
+    axx[2].locator_params(axis='y', nbins=5)
 
     # For non edge cells
     bambi_non_edge_event_rate = []
@@ -438,13 +441,13 @@ def plot_all_bucket_dynamics(data):  ##### EDIT THIS ####
     axx[2].errorbar(arange(NUMBER_OF_SESSIONS),
                     bambi_average_chosen_event_rate,
                     bambi_std_chosen_event_rate)
-
-    setp(axx, xticks=range(5), xticklabels=['1', '2', '3', '4', '5'])
+    setp(axx, xticks=range(5))
+    setp(axx[2], xticklabels=['1', '2', '3', '4', '5'])
     for i in range(3):
         for xtick in axx[i].xaxis.get_major_ticks():
-            xtick.label.set_fontsize(14)
+            xtick.label.set_fontsize(20)
         for ytick in axx[i].yaxis.get_major_ticks():
-            ytick.label.set_fontsize(14)
+            ytick.label.set_fontsize(20)
         box = axx[i].get_position()
         axx[i].set_position([box.x0, box.y0 + box.height * 0.2,
                              box.width, box.height * 0.8])
@@ -535,7 +538,7 @@ def main():
     data['decoded_bins_bucket'] = test_all_bucket_trials(data)
 
     plot_all_bucket_dynamics(data)
-    plot_all_track_dynamics(data)
+    # plot_all_track_dynamics(data)
     # plot_bucket_decoding(data)
     raw_input('Press enter to quit')
 

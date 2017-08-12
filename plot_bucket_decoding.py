@@ -21,12 +21,31 @@ def main():
         bambi_bucket = [np.concatenate([x,y]) for x,y in
                         zip(bambi_first_bucket,bambi_last_bucket)]
 
-        nitzan_all = np.concatenate(nitzan_bucket)
-        bambi_all = np.concatenate(bambi_bucket)
+        bins_density_nitzan = []
+        bins_density_bambi = []
+        for k in range(5):
+            y, bin_edges = np.histogram(nitzan_bucket[k]\
+                                        [~np.isnan(nitzan_bucket[k])], bins=10,
+                                        normed=True)
+            bins_density_nitzan.append(y)
+            y, bin_edges = np.histogram(bambi_bucket[k]\
+                                        [~np.isnan(bambi_bucket[k])], bins=10,
+                                        normed=True)
+            bins_density_bambi.append(y)
 
-        axx2[i].hist([nitzan_all[~np.isnan(nitzan_all)],
-                         bambi_all[~np.isnan(bambi_all)]], normed=True,
-                        align='right', label= ['Phase 0', 'Phase 1'])
+        bins_density_nitzan = np.vstack(bins_density_nitzan)
+        bins_density_bambi = np.vstack(bins_density_bambi)
+
+        mean_bins_density_nitzan = np.mean(bins_density_nitzan, axis=0)
+        mean_bins_density_bambi = np.mean(bins_density_bambi, axis=0)
+        std_bins_density_nitzan = np.std(bins_density_nitzan, axis=0)
+        std_bins_density_bambi = np.std(bins_density_bambi, axis=0)
+
+        axx2[i].bar(bin_edges[:-1], mean_bins_density_nitzan,
+                    yerr=std_bins_density_nitzan, width=0.35, color='b', label= 'Phase 0')
+        axx2[i].bar(bin_edges[:-1]+0.35, mean_bins_density_bambi,
+                    yerr=std_bins_density_bambi, width=0.35, color='g', label='Phase 1')
+        legend()
         axx2[i].set_title('C%sM%s' % (CAGE[i], mouse), fontsize=18)
         axx2[i].set_xlabel('#Bins', fontsize=17)
 
@@ -44,23 +63,23 @@ def main():
         # f.show()
 
         # Plot histogram for session bucket trial:
-        f, axx=subplots(5,2, sharex=True, sharey=True)
-        for k in range(5):
-            axx[k, 0].hist(nitzan_bucket[k][~np.isnan(nitzan_bucket[k])], normed=True)
-            axx[k, 0].set_ylabel('Density session %s' %k, fontsize=16)
-            axx[k, 1].hist(bambi_bucket[k][~np.isnan(bambi_bucket[k])], normed=True)
-        axx[0, 0].set_title('Nitzan', fontsize=16)
-        axx[4, 0].set_xlabel('#Bins', fontsize=16)
-        axx[0, 1].set_title('bambi', fontsize=16)
-        axx[4, 1].set_xlabel('#Bins', fontsize=16)
-        f.suptitle('C%sM%s' % (CAGE[i], mouse), fontsize=18)
-        for j in range(5):
-            for k in range(2):
-                for xtick in axx[j, k].xaxis.get_major_ticks():
-                    xtick.label.set_fontsize(15)
-                for ytick in axx[j, k].yaxis.get_major_ticks():
-                    ytick.label.set_fontsize(15)
-        f.show()
+        # f, axx=subplots(5,2, sharex=True, sharey=True)
+        # for k in range(5):
+        #     axx[k, 0].hist(nitzan_bucket[k][~np.isnan(nitzan_bucket[k])], normed=True)
+        #     axx[k, 0].set_ylabel('Density session %s' %k, fontsize=16)
+        #     axx[k, 1].hist(bambi_bucket[k][~np.isnan(bambi_bucket[k])], normed=True)
+        # axx[0, 0].set_title('Nitzan', fontsize=16)
+        # axx[4, 0].set_xlabel('#Bins', fontsize=16)
+        # axx[0, 1].set_title('bambi', fontsize=16)
+        # axx[4, 1].set_xlabel('#Bins', fontsize=16)
+        # f.suptitle('C%sM%s' % (CAGE[i], mouse), fontsize=18)
+        # for j in range(5):
+        #     for k in range(2):
+        #         for xtick in axx[j, k].xaxis.get_major_ticks():
+        #             xtick.label.set_fontsize(15)
+        #         for ytick in axx[j, k].yaxis.get_major_ticks():
+        #             ytick.label.set_fontsize(15)
+        # f.show()
 
     axx2[0].set_ylabel('Density of decoding', fontsize=17)
 
