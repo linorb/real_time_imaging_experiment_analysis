@@ -47,7 +47,7 @@ def main():
                     yerr=std_bins_density_bambi, width=0.35, color='g', label='Phase 1')
         legend()
         axx2[i].set_title('C%sM%s' % (CAGE[i], mouse), fontsize=18)
-        axx2[i].set_xlabel('#Bins', fontsize=17)
+        axx2[i].set_xlabel('#Bins', fontsize=20)
 
         # # Plot histogram for each bucket trial:
         # f, axx=subplots(5,4, sharex=True, sharey=True)
@@ -81,14 +81,14 @@ def main():
         #             ytick.label.set_fontsize(15)
         # f.show()
 
-    axx2[0].set_ylabel('Density of decoding', fontsize=17)
+    axx2[0].set_ylabel('Density of decoding', fontsize=20)
 
     for j in range(2):
         for xtick in axx2[j].xaxis.get_major_ticks():
-            xtick.label.set_fontsize(15)
+            xtick.label.set_fontsize(20)
         for ytick in axx2[j].yaxis.get_major_ticks():
-            ytick.label.set_fontsize(15)
-    legend(fontsize=17)
+            ytick.label.set_fontsize(20)
+    legend(fontsize=20)
     f2.show()
 
     raw_input('press enter')

@@ -15,7 +15,7 @@ import decode_bucket_trials as dbt
 # Number of sessions in all runs in the experiment
 NUMBER_OF_SESSIONS = 5
 BAMBI_NUMBER_OF_TRIALS = 7
-MOUSE = '6'
+MOUSE = '3'
 CAGE = '40'
 ROIS_INDICES = {}
 REGISTRATION_FILENAME = {}
