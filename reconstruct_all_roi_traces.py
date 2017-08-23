@@ -3,7 +3,7 @@ import os
 import subprocess
 
 CONFIG_FILE_PATH = r'D:\dev\real_time_imaging_experiment_analysis\reconstructing_traces_for_all_roi\20170309\c40m6'
-VIDEOS_PATH =  r'Z:\Short term data storage\Data storage (1 year)\experiments\real_time_imaging\20170309\c40m6\real_time_imaging'
+VIDEOS_PATH =  r'Z:\Short term data storage\Data storage (1 year)\experiments\real_time_imaging\20170219\c40m3\real_time_imaging'
 
 list_of_dirs = os.listdir(VIDEOS_PATH)
 

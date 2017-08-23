@@ -12,7 +12,7 @@ from matplotlib.pyplot import *
 from bambi.tools.activity_loading import *
 from bambi.tools.matlab import *
 
-MOUSE = '3'
+MOUSE = '6'
 CAGE = '40'
 RESULTS_PATH = r'D:\dev\real_time_imaging_experiment_analysis\reconstructing_traces_for_all_roi\bucket_experiment'
 MOVEMENT_PATH = r'Z:\Short term data storage\Data storage (1 year)\experiments\real_time_imaging\%s\c%sm%s\tracking\C%sM%s_Day00%d.mat'
@@ -250,12 +250,12 @@ def calculate_p_correct_for_session(all_session_events, bins, number_of_active_r
     plot(bins + 1, 'b', label='Tracking behavior')
     plot((bins+ 1)*active_frames_indices, 'ro', label='Active frame')
     ylim(0.5, 11)
-    ylabel('# Bin', fontsize=20)
-    xlabel('# Frame', fontsize=20)
-    legend(fontsize=20, bbox_to_anchor=(1.1, 0.7))
+    # legend(fontsize=18, bbox_to_anchor=(1.1, 1.1))
     title('C%sM%s' %(CAGE, MOUSE), fontsize=25)
-    xticks(fontsize=20)
-    yticks(fontsize=20)
+    xlabel('Time [Sec]', fontsize=22)
+    ylabel('Position [bin]', fontsize=22)
+    xticks(np.arange(0, 7000, 1000), np.arange(0, 700, 100), fontsize=22)
+    yticks(fontsize=22)
     show()
 
     correct_activations = np.zeros(activated_bins.shape, dtype=bool)
