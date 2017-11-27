@@ -13,21 +13,21 @@ from bambi.tools.activity_loading import unite_sessions
 # only the first 4 sessions are taken since there is a problem in Nitzan's last session in C40M3
 NUMBER_OF_SESSIONS = 4
 BAMBI_NUMBER_OF_TRIALS = 7
-MOUSE = '3'
+MOUSE = '6'
 CAGE = '40'
 ROIS_INDICES = {}
 
 EDGE_BINS = [0, 9]
 EDGE_PERCENT = 0.9
 # For c40m3
-CELL_REGISTRATION_FILENAME = r'Z:\Short term data storage\Data storage (1 year)\Nitzan\c40m3\registration_110_days\cellRegistered_Final_16-Mar-2017_133500.mat'
+CELL_REGISTRATION_FILENAME = r'D:\dev\real_time_imaging_experiment_analysis\phase_1_preprocessed\registration\c40m3\cellRegistered_Final_16-Mar-2017_133500.mat'
 ROIS_INDICES['3'] = [36, 53, 80, 89, 158, 181, 195, 229, 258, 290, 321, 336,
                      339, 357, 366, 392, 394, 399, 408, 439, 446, 448, 449,
                      465, 490]
 
 # For c40m6
-NITZAN_CELL_REGISTRATION_FILENAME = r'D:\dev\replays\work_data\recall\c40m6\cellRegistered_linear.mat'
-BAMBI_CELL_REGISTRATION_FILNAME = r'Z:\Short term data storage\Data storage (1 year)\experiments\real_time_imaging\c40m6_registered_1202-0309\registration\cellRegistered_Final_20170423_123804.mat'
+NITZAN_CELL_REGISTRATION_FILENAME = r'D:\dev\real_time_imaging_experiment_analysis\phase_1_preprocessed\registration\c40m6\cellRegistered_linear.mat'
+BAMBI_CELL_REGISTRATION_FILNAME = r'D:\dev\real_time_imaging_experiment_analysis\phase_1_preprocessed\registration\c40m6\cellRegistered_Final_20170423_123804.mat'
 ROIS_INDICES['6'] = [44, 61, 78, 96, 154, 157, 172, 195, 214, 226, 244, 247,
                      259, 261, 262, 286, 287, 290, 301, 303, 314, 337, 340,
                      346, 348, 368, 372, 374, 383, 389, 391, 407, 415, 418,
@@ -190,7 +190,10 @@ def extract_nitzans_data(cage, mouse, cell_to_index_map):
         # Skip header
         frameLog.next()
         session_frame_log = []
-        for line in frameLog:
+        for k, line in enumerate(frameLog):
+            # one trial is missing for c40m6 session 3 trial 6
+            if (MOUSE == '6') & (i == 3) & (k == 6):
+                continue
             # Set indices to 0-index based, but the second index should end one frame after
             session_frame_log.append([int(line[2]) - 1, int(line[3])])
 
@@ -237,8 +240,8 @@ def plot_cell_activity_through_all_sessions(cell_activity, behavior, title):
         line_hight += eps
     plt.ylim([eps/3, line_hight])
     f.suptitle(title)
-    f.show()
-
+    plt.savefig(title + '.tiff')
+    plt.close(f)
 
 def main():
     nitzan_registration, bambi_registration, ROI_global_indices = \
@@ -253,9 +256,10 @@ def main():
         cell_activity = [[x[cell_index, :] for x in bambi_events[i]] for i in
                          xrange(number_of_sessions)]
         title = 'Cell no. %d Bambi experiment' % cell_index
+        if cell_index in ROI_global_indices:
+            title = 'Cell no. %d Bambi experiment - Chosen cell' % cell_index
         plot_cell_activity_through_all_sessions(cell_activity, bambi_behavior,
                                                 title)
-        raw_input('Press enter to quit')
 
     number_of_sessions = len(nitzan_events)
     number_of_cells = nitzan_events[0][0].shape[0]
@@ -265,7 +269,7 @@ def main():
         title = 'Cell no. %d Nitzan experiment' % cell_index
         plot_cell_activity_through_all_sessions(cell_activity, nitzan_behavior,
                                                 title)
-        raw_input('Press enter to quit')
+    raw_input('Press Enter')
 
 if __name__ == '__main__':
     main()
