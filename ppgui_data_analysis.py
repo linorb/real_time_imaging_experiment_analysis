@@ -16,7 +16,7 @@ from zivlab.analysis.place_cells import find_place_cells, \
 # Number of sessions in all runs in the experiment
 NUMBER_OF_SESSIONS = 5
 BAMBI_NUMBER_OF_TRIALS = 7
-MOUSE = '3'
+MOUSE = '6'
 CAGE = '40'
 ROIS_INDICES = {}
 
@@ -36,7 +36,7 @@ ROIS_INDICES['6'] = [44, 61, 78, 96, 154, 157, 172, 195, 214, 226, 244, 247,
                      346, 348, 368, 372, 374, 383, 389, 391, 407, 415, 418,
                      419, 448, 448, 460, 472, 473, 474, 479, 488, 501, 517, 569]
 
-def  load_cell_registration(mouse):
+def load_cell_registration(mouse):
     #Taken from Or's script - for C40M3
     # Load the cell registration results
     if mouse == '3':
@@ -78,6 +78,7 @@ def  load_cell_registration(mouse):
 
     return nitzan_run, bambi_run, global_numbering_roi
 
+
 def extract_nitzans_data(cage, mouse):
     """Taken from OR's code dynamic_analysis"""
     full_bins_traces = []
@@ -102,6 +103,7 @@ def extract_nitzans_data(cage, mouse):
                 session_bins_traces.append(my_mvmt[j][0][0][3][1:].T[0])
                 session_velocity_traces.append(my_mvmt[j][0][0][4][1:].T[0])
             except IndexError:
+                print "missing trial %d in C%sM%s session %d" % (j, cage, mouse, i)
                 missing_trials.append([i,j])
         full_bins_traces.append(session_bins_traces)
         full_velocity_traces.append(session_velocity_traces)
@@ -206,6 +208,7 @@ def extract_nitzans_data(cage, mouse):
 
     return bins_traces, velocity_traces, events_traces, bucket_events_traces
 
+
 def extract_bambi_data(cage, mouse):
     """Taken from OR's code dynamic_analysis"""
 
@@ -283,6 +286,7 @@ def extract_bambi_data(cage, mouse):
 
         if minimum_number_of_frames != len(bins_traces[i]) or minimum_number_of_frames != events_traces[i].shape[1]:
             print 'Minimum number of frames in session %d is %d' % (i, minimum_number_of_frames)
+            print "diff is %d" %(len(bins_traces[i])-events_traces[i].shape[1])
 
             bins_traces[i] = bins_traces[i][:minimum_number_of_frames]
             velocity_traces[i] = velocity_traces[i][:minimum_number_of_frames]
@@ -295,6 +299,7 @@ def extract_bambi_data(cage, mouse):
 
     return bins_traces, velocity_traces, events_traces, bucket_events_traces
 
+
 def set_in_data(current_data, bins_traces, events_traces, bucket_events_traces):
     current_data['bins_traces'] = bins_traces
     current_data['events_traces'] = [(e > 0).astype('int') for e in events_traces]
@@ -304,9 +309,10 @@ def set_in_data(current_data, bins_traces, events_traces, bucket_events_traces):
 
     return current_data
 
+
 def find_edge_cells(bins, events, edge_percent, edge_bins):
     # count number of events per neuron
-    number_of_neuron_events = np.sum(events, axis=1)
+    number_of_neuron_events = np.sum(events > 0, axis=1)
 
     #count the number of events in the edges per neuron
     edge_frames_indices = np.zeros_like(bins, dtype=bool)
@@ -319,6 +325,7 @@ def find_edge_cells(bins, events, edge_percent, edge_bins):
 
     return edge_neurons
 
+
 def find_edge_cells_for_all_sessions(bins_traces, events_traces, edge_percent,
                                      edge_bins):
     edge_cells = []
@@ -326,6 +333,7 @@ def find_edge_cells_for_all_sessions(bins_traces, events_traces, edge_percent,
         edge_cells.append(find_edge_cells(bins, events, edge_percent, edge_bins))
 
     return edge_cells
+
 
 def renumber_sessions_cells_ID(events_traces, cell_to_index_map):
     """Renumbers the events' list, as inserted to the data struct, to the global
@@ -337,6 +345,7 @@ def renumber_sessions_cells_ID(events_traces, cell_to_index_map):
 
     return global_numbering_events
 
+
 def recurrence_probability(global_numbering_events, cells_indices,
                            events_threshold):
     # Calculate recurrence probability. assuming global_numbering_events is a list of events matrices that has global
@@ -347,7 +356,7 @@ def recurrence_probability(global_numbering_events, cells_indices,
 
     # Counting number of events per cell per session for the cell indices
     for session in global_numbering_events:
-        over_threshold_events.append(np.sum(session[cells_indices, :], axis=1) > events_threshold)
+        over_threshold_events.append(np.sum(session[cells_indices, :] > 0, axis=1) > events_threshold)
 
 
     # Probabilities
@@ -363,6 +372,7 @@ def recurrence_probability(global_numbering_events, cells_indices,
 
     return p
 
+
 def probabilities_properties(probabilities):
     diagonals = [diagonal(probabilities, offset=i) for i in xrange(NUMBER_OF_SESSIONS)]
 
@@ -370,6 +380,7 @@ def probabilities_properties(probabilities):
     stds = [std(d) for d in diagonals]
 
     return averages, stds
+
 
 def count_events_per_session(global_numbering_events, cells_indices):
     # Calculate the events rate through all sessions
@@ -379,9 +390,10 @@ def count_events_per_session(global_numbering_events, cells_indices):
 
     # Counting number of events per cell per session for the cell indices
     for i, session in enumerate(global_numbering_events):
-        number_of_events_per_session[:, i] = np.sum(session[cells_indices, :], axis=1)
+        number_of_events_per_session[:, i] = np.sum(session[cells_indices, :] > 0, axis=1)
 
     return number_of_events_per_session
+
 
 def calculate_ensamble_correlation(global_numbering_events, cells_indices):
     number_of_sessions = len(global_numbering_events)
@@ -390,7 +402,8 @@ def calculate_ensamble_correlation(global_numbering_events, cells_indices):
     activity_vectors = []
 
     for session in global_numbering_events:
-        activity_vectors.append(np.sum(session[cells_indices, :], axis=1).astype(float) / number_of_frames)
+        number_of_frames = session.shape[1]
+        activity_vectors.append(np.sum(session[cells_indices, :] > 0, axis=1).astype(float) / number_of_frames)
 
     rho = np.zeros((number_of_sessions, number_of_sessions))
     for i in xrange(number_of_sessions):
@@ -398,6 +411,7 @@ def calculate_ensamble_correlation(global_numbering_events, cells_indices):
             rho[i, j] = np.corrcoef(activity_vectors[i], activity_vectors[j])[0, 1]
 
     return rho
+
 
 def analyze_and_separate_bucket_dynamics_for_edge(data):
     # Calculate recurrence probability, event rate, and ensamble correlation for a data set, given its
@@ -431,6 +445,7 @@ def analyze_and_separate_bucket_dynamics_for_edge(data):
         last_bucket_sessions_dynamics.append(dynamics)
 
     return first_bucket_sessions_dynamics, last_bucket_sessions_dynamics
+
 
 def analyze_bucket_dynamics(data, cell_type):
     # Calculate recurrence probability, event rate, and ensamble correlation for
@@ -474,6 +489,7 @@ def analyze_bucket_dynamics(data, cell_type):
 
     return bucket_sessions_dynamics
 
+
 def analyze_and_separate_bucket_dynamics_for_non_edge(data):
     # Calculate recurrence probability, event rate, and ensamble correlation for a data set, given its
     # global_numbering_events and edge_cells calculated before. for all sessions
@@ -510,6 +526,7 @@ def analyze_and_separate_bucket_dynamics_for_non_edge(data):
         last_bucket_sessions_dynamics.append(dynamics)
 
     return first_bucket_sessions_dynamics, last_bucket_sessions_dynamics
+
 
 def plot_dynamics(first_bucket_sessions_dynamics, last_bucket_sessions_dynamics,
                   name):
@@ -561,6 +578,7 @@ def plot_dynamics(first_bucket_sessions_dynamics, last_bucket_sessions_dynamics,
 
     f.show()
 
+
 def average_dynamics(sessions_dynamics, field_name):
     concatenated_field = []
     for session in sessions_dynamics:
@@ -571,12 +589,14 @@ def average_dynamics(sessions_dynamics, field_name):
 
     return average_field, std_field
 
+
 def gather_dynamics_by_reference(sessions_dynamics, field_name):
     dynamics_by_reference = np.zeros_like(sessions_dynamics[0][field_name])
     for i, session in enumerate(sessions_dynamics):
         dynamics_by_reference[i, :] = session[field_name][i,:]
 
     return dynamics_by_reference
+
 
 def plot_average_recurrence(first_bucket_sessions_dynamics,
                             last_bucket_sessions_dynamics, name):
@@ -596,6 +616,7 @@ def plot_average_recurrence(first_bucket_sessions_dynamics,
     line2 = axx.errorbar(arange(NUMBER_OF_SESSIONS), a, s)
     legend((line1, line2), ('first bucket', 'last bucket'))
     f.show()
+
 
 def plot_compare_average(nitzan_bucket_session_dynamics,
                          bambi_bucket_session_dynamics, field_name):
@@ -667,6 +688,7 @@ def plot_compare_average(nitzan_bucket_session_dynamics,
 
     f.show()
 
+
 def calculate_population_percent(events_traces, cell_indices):
     number_of_sessions = int(len(events_traces))
     number_of_cells = len(cell_indices)
@@ -676,6 +698,7 @@ def calculate_population_percent(events_traces, cell_indices):
                              /float(number_of_cells)
 
     return session_percent
+
 
 def plot_chosen_cells_participance(data):
     chosen_cells = data['bambi']['chosen roi indices']
@@ -704,6 +727,7 @@ def plot_chosen_cells_participance(data):
     ylim(0,1)
     f.show()
     return
+
 
 def plot_all_bucket_dynamics(data): ##### EDIT THIS ####
     nitzan_bucket_dynamics_edge = \
@@ -873,6 +897,7 @@ def plot_all_bucket_dynamics(data): ##### EDIT THIS ####
     f.show()
     return
 
+
 def analyze_track_dynamics(data, cell_type):
     # Calculate recurrence probability, event rate, and ensamble correlation and
     # PV for a data set, given its global_numbering_events and edge_cells calculated
@@ -907,7 +932,7 @@ def analyze_track_dynamics(data, cell_type):
                 (track_events, cells_indices)
 
             event_rate_distribution = calculate_rate_distribution\
-                (data['bins_traces'],track_events, cells_indices)
+                (data['bins_traces'], track_events, cells_indices)
 
             dynamics['pv_correlation'] = calculate_pv_correlations\
                 (event_rate_distribution)
@@ -915,6 +940,7 @@ def analyze_track_dynamics(data, cell_type):
             track_sessions_dynamics.append(dynamics)
 
         return track_sessions_dynamics
+
 
 def plot_all_track_dynamics(data): ##### EDIT THIS ####
     nitzan_track_dynamics_edge = \
@@ -1120,6 +1146,7 @@ def plot_all_track_dynamics(data): ##### EDIT THIS ####
     f.show()
     return
 
+
 def plot_recurrence_for_consecutive_days(data):
     nitzan_bucket_dynamics_edge = \
         analyze_bucket_dynamics(data['nitzan'], 'edge_cells')
@@ -1224,6 +1251,7 @@ def plot_recurrence_for_consecutive_days(data):
     f.show()
     return
 
+
 def calculate_rate_distribution(bins_traces, events_traces, cell_indices):
     event_rate_distributions = []
     for i in xrange(NUMBER_OF_SESSIONS):
@@ -1233,6 +1261,7 @@ def calculate_rate_distribution(bins_traces, events_traces, cell_indices):
         event_rate_distributions.append(event_rate_distribution)
 
     return event_rate_distributions
+
 
 def calculate_pv_correlations(event_rate_distribution):
     # This is the PV of a single session
@@ -1255,6 +1284,7 @@ def calculate_pv_correlations(event_rate_distribution):
             correlations[i, j] = mean(array(bins_correlations))
 
     return correlations
+
 
 def main():
     data = {'nitzan': {},
