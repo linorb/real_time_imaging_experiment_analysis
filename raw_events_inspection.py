@@ -217,7 +217,9 @@ def plot_cell_activity_through_all_sessions(cell_activity, behavior, title):
     """Plots the raw activity for a cell
     Args:
         cell_activity: List of cells' activity on each trial ans session
-        behavior: List of mouse location on each trial and session"""
+        behavior: List of mouse location on each trial and session
+        title: String of the title that would appear in the figure
+        """
     eps = 0.1
     line_hight = eps
     f = plt.figure()
