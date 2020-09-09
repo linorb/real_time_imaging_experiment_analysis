@@ -16,21 +16,21 @@ from zivlab.analysis.place_cells import find_place_cells, \
 # Number of sessions in all runs in the experiment
 NUMBER_OF_SESSIONS = 5
 BAMBI_NUMBER_OF_TRIALS = 7
-MOUSE = '6'
+MOUSE = '3'
 CAGE = '40'
 ROIS_INDICES = {}
 
 EDGE_BINS = [0, 9]
 EDGE_PERCENT = 0.9
 # For c40m3
-CELL_REGISTRATION_FILENAME = r'Z:\Short term data storage\Data storage (1 year)\Nitzan\c40m3\registration_110_days\cellRegistered_Final_16-Mar-2017_133500.mat'
+CELL_REGISTRATION_FILENAME = r"Z:\experiments\projects\bambi\linear_track\analysis\nitzang_c40m3\registration_110_days\cellRegistered_Final_16-Mar-2017_133500.mat"
 ROIS_INDICES['3'] = [36, 53, 80, 89, 158, 181, 195, 229, 258, 290, 321, 336,
                      339, 357, 366, 392, 394, 399, 408, 439, 446, 448, 449,
                      465, 490]
 
 # For c40m6
-NITZAN_CELL_REGISTRATION_FILENAME = r'D:\dev\replays\work_data\recall\c40m6\cellRegistered_linear.mat'
-BAMBI_CELL_REGISTRATION_FILNAME = r'Z:\Short term data storage\Data storage (1 year)\experiments\real_time_imaging\c40m6_registered_1202-0309\registration\cellRegistered_Final_20170423_123804.mat'
+NITZAN_CELL_REGISTRATION_FILENAME = r"Y:\experiments\users\nitzang\nov16\registration\c40m6\cellRegistered_Final_20170731_134327.mat"
+BAMBI_CELL_REGISTRATION_FILNAME = r"Z:\experiments\projects\bambi\linear_track\analysis\nitzang_c40m6\c40m6_registered_1202-0309\registration\cellRegistered_Final_20170423_123804.mat"
 ROIS_INDICES['6'] = [44, 61, 78, 96, 154, 157, 172, 195, 214, 226, 244, 247,
                      259, 261, 262, 286, 287, 290, 301, 303, 314, 337, 340,
                      346, 348, 368, 372, 374, 383, 389, 391, 407, 415, 418,
@@ -57,11 +57,11 @@ def load_cell_registration(mouse):
 
     elif mouse == '6':
         # Load the cell registration results
-        cell_registration = scipy.io.loadmat(NITZAN_CELL_REGISTRATION_FILENAME)[
-            'optimal_cell_to_index_map'].astype(int)
+        cell_registration = h5py.File(NITZAN_CELL_REGISTRATION_FILENAME)['cell_registered_struct'][
+            'optimal_cell_to_index_map'].value.astype(int)
         # Compensate for 0-based indexing
         cell_registration -= 1
-        nitzan_run = cell_registration[:, :5]
+        nitzan_run = np.transpose(cell_registration[:5])
 
         cell_registration = \
         h5py.File(BAMBI_CELL_REGISTRATION_FILNAME)['cell_registered_struct'][
@@ -89,7 +89,7 @@ def extract_nitzans_data(cage, mouse):
 
     for i in xrange(NUMBER_OF_SESSIONS):
         print i
-        bins_filename = os.path.join(r'Z:\Short term data storage\Lab members\Nitzan\nov16_data\tracking\Cage%s_Mouse%s' %(cage, mouse),
+        bins_filename = os.path.join(r'Y:\experiments\users\nitzang\nov16\tracking\c%sm%s' %(cage, mouse),
                                      'Day%d.mat' % (i + 1,))
         my_mvmt = scipy.io.loadmat(bins_filename)['my_mvmt'][0]
         session_bins_traces = []
@@ -108,7 +108,7 @@ def extract_nitzans_data(cage, mouse):
         full_bins_traces.append(session_bins_traces)
         full_velocity_traces.append(session_velocity_traces)
 
-        events_filename = os.path.join(r'Z:\Short term data storage\Lab members\Nitzan\nov16_data\Pre_processing\c%sm%s' %(cage, mouse),
+        events_filename = os.path.join(r'Y:\experiments\users\nitzang\nov16\Pre_processing\c%sm%s' %(cage, mouse),
                                        'day%d' % (i + 1,),
                                        'linear',
                                        'finalResults',
@@ -116,7 +116,7 @@ def extract_nitzans_data(cage, mouse):
         allEventsMat = scipy.io.loadmat(events_filename)['allEventsMat'].T
         full_events_traces.append(allEventsMat)
 
-        frame_log_filename = os.path.join(r'Z:\Short term data storage\Lab members\Nitzan\nov16_data\Pre_processing\c%sm%s' %(cage, mouse),
+        frame_log_filename = os.path.join(r'Y:\experiments\users\nitzang\nov16\Pre_processing\c%sm%s' %(cage, mouse),
                                           'day%d' % (i + 1,),
                                           'linear',
                                           'finalResults',
@@ -212,15 +212,16 @@ def extract_nitzans_data(cage, mouse):
 def extract_bambi_data(cage, mouse):
     """Taken from OR's code dynamic_analysis"""
 
-    BASE_DIRNAME = r'D:\dev\real_time_imaging_experiment_analysis\phase_1_preprocessed'
+    BASE_DIRNAME = r'Z:\experiments\projects\bambi\linear_track\analysis\nitzang_%s\1_linear_track' % ('c'+cage+'m'+mouse)
     full_bins_traces = []
     full_velocity_traces = []
     full_events_traces = []
     frame_logs = []
-
+    session_list = os.listdir(BASE_DIRNAME)
     for i in xrange(NUMBER_OF_SESSIONS):
-        bins_filename = os.path.join(BASE_DIRNAME, 'session_%d' % (i+1), 'c'+cage+'m'+mouse, 'my_mvmt.mat')
-        my_mvmt = scipy.io.loadmat(bins_filename)['my_mvmt'][0]
+        tracking_dir = os.path.join(BASE_DIRNAME, session_list[i], 'tracking')
+        tracking_filename = os.listdir(tracking_dir)
+        my_mvmt = scipy.io.loadmat(os.path.join(tracking_dir, tracking_filename[0]))['my_mvmt'][0]
         session_bins_traces = []
         session_velocity_traces = []
         for j in xrange(1, my_mvmt.shape[0]):
@@ -233,11 +234,13 @@ def extract_bambi_data(cage, mouse):
         full_bins_traces.append(session_bins_traces)
         full_velocity_traces.append(session_velocity_traces)
 
-        events_filename = os.path.join(BASE_DIRNAME, 'session_%d' % (i+1,), 'c'+cage+'m'+mouse, 'finalEventsMat.mat')
+        ppgui_dir = os.path.join(BASE_DIRNAME, session_list[i], 'preprocessed')
+        final_results_dir = [x for x in os.listdir(ppgui_dir) if 'final' in x]
+        events_filename = os.path.join(ppgui_dir, final_results_dir[0], 'finalEventsMat.mat')
         allEventsMat = scipy.io.loadmat(events_filename)['allEventsMat'].T
         full_events_traces.append(allEventsMat)
 
-        frame_log_filename = os.path.join(BASE_DIRNAME, 'session_%d' % (i+1,), 'c'+cage+'m'+mouse, 'frameLog.csv')
+        frame_log_filename = os.path.join(ppgui_dir, final_results_dir[0], 'frameLog.csv')
         frameLog = csv.reader(open(frame_log_filename, 'rb'))
         # Skip header
         frameLog.next()
@@ -258,15 +261,18 @@ def extract_bambi_data(cage, mouse):
         bucket_events_traces['first'].append(full_events_traces[i][:, frame_logs[i][0][0]:frame_logs[i][0][1]])
         bucket_events_traces['last'].append(full_events_traces[i][:, frame_logs[i][-1][0]:frame_logs[i][-1][1]])
 
+    DATA_DIRNAME = r'Z:\experiments\projects\bambi\linear_track\data\nitzang_%s\1_linear_track' % ('c'+cage+'m'+mouse)
     bins_traces = []
     velocity_traces = []
     for i in xrange(NUMBER_OF_SESSIONS):
         bins_trace = []
         velocity_trace = []
+        session_dir = os.path.join(DATA_DIRNAME, session_list[i], 'bambi')
+        trials_list = [x for x in os.listdir(session_dir) if 'results' in x][1:-1]
         for j in xrange(len(full_bins_traces[i])):
             # Remove missing frames
             microscope_statistics = cPickle.load(open(
-                os.path.join(BASE_DIRNAME, 'session_%d' % (i+1,), 'c'+cage+'m'+mouse, 'linear_trial_%d' % (j+1,), 'microscope_statistics.pkl')))
+                os.path.join(session_dir, trials_list[j], 'microscope_statistics.pkl')))
             fixed_bins_traces = delete(full_bins_traces[i][j], microscope_statistics['missing_frames'])
             fixed_velocity_traces = delete(full_velocity_traces[i][j],
                                        microscope_statistics['missing_frames'])
