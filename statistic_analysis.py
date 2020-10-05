@@ -15,8 +15,9 @@ from bambi.tools.matlab import *
 MOUSE = '6'
 CAGE = '40'
 RESULTS_PATH = r'D:\dev\real_time_imaging_experiment_analysis\reconstructing_traces_for_all_roi\bucket_experiment'
-MOVEMENT_PATH = r'Z:\Short term data storage\Data storage (1 year)\experiments\real_time_imaging\%s\c%sm%s\tracking\C%sM%s_Day00%d.mat'
-REAL_TIME_PATH = r'Z:\Short term data storage\Data storage (1 year)\experiments\real_time_imaging\%s\c%sm%s\real_time_imaging'
+MOVEMENT_PATH = r'Z:\experiments\projects\bambi\linear_track\analysis\nitzang_c%sm%s\1_linear_track\%s\tracking\C%sM%s_Day00%d.mat'
+REAL_TIME_PATH = r'Z:\experiments\projects\bambi\linear_track\data\nitzang_c%sm%s\1_linear_track\%s\bambi'
+ANALYSIS_PATH = r'Z:\experiments\projects\bambi\linear_track\analysis\nitzang_c%sm%s\1_linear_track\%s'
 LINEAR_EXPERIMENT_DATES = ['20170219',
                            '20170222',
                            '20170225',
@@ -239,24 +240,10 @@ def main():
                  'all_permutatioms_activations': permutations_number_of_activations,
                  'all_session_activations': all_session_activations})
 
-def calculate_p_correct_for_session(all_session_events, bins, number_of_active_rois, edge_bins):
+def calculate_p_correct_for_session(activations, bins, edge_bins):
     """Calculate P correct for one session. take only the activated frames,
     and calculate the precent of them in the edges """
-    number_of_activations = np.sum(all_session_events, axis=0)
-    active_frames_indices = number_of_activations > number_of_active_rois
-    activated_bins = bins[active_frames_indices]
-
-    figure()
-    plot(bins + 1, 'b', label='Tracking behavior')
-    plot((bins+ 1)*active_frames_indices, 'ro', label='Active frame')
-    ylim(0.5, 11)
-    # legend(fontsize=18, bbox_to_anchor=(1.1, 1.1))
-    title('C%sM%s' %(CAGE, MOUSE), fontsize=25)
-    xlabel('Time [Sec]', fontsize=22)
-    ylabel('Position [bin]', fontsize=22)
-    xticks(np.arange(0, 7000, 1000), np.arange(0, 700, 100), fontsize=22)
-    yticks(fontsize=22)
-    show()
+    activated_bins = bins[activations]
 
     correct_activations = np.zeros(activated_bins.shape, dtype=bool)
     for bin in edge_bins:
@@ -312,9 +299,7 @@ def concatenate_bins_for_real_time_events(movement_data, results_path, trials_in
 
     return concatenated_bins
 
-def create_match_events_and_bins(movement_data, results_path, trials_indices, real_time_path):
-    key = 'bin'
-
+def create_match_events_and_bins(movement_data, results_path, trials_indices, real_time_path, key='bin'):
     linear_trials_dirs = extract_certain_trial_dirs(results_path, trials_indices)
     if real_time_path:
         real_time_trials_dirs = extract_certain_trial_dirs(real_time_path, trials_indices)
@@ -374,31 +359,104 @@ def create_match_events_and_bins(movement_data, results_path, trials_indices, re
 
     return concatenated_bins, concatenated_events
 
+def plot_activation_bins(bins, activations, title):
+    f, axx = subplots(1, 1)
+    t = np.arange(len(bins)) / 10
+    axx.plot(t, bins + 1, 'b', label='Tracking behavior')
+    axx.plot(t[activations], bins[activations] + 1, 'ro', label='Active frame')
+    axx.set_xlim(0, 610)
+    f.suptitle(title, fontsize=25)
+    axx.set_xlabel('Time [sec]', fontsize=22)
+    axx.set_ylabel('Location [cm]', fontsize=22)
+    for xtick in axx.xaxis.get_major_ticks():
+        xtick.label.set_fontsize(22)
+    for ytick in axx.yaxis.get_major_ticks():
+        ytick.label.set_fontsize(22)
+    f.show()
+    return
+
 def main2():
     """This main is for calculating P correct in the linear track experiment"""
     full_path = RESULTS_PATH
     list_of_sessions = LINEAR_EXPERIMENT_DATES
-    p_correct_all_sessions = []
-    for i, dir_name in enumerate(list_of_sessions):
-        movement_file_path = MOVEMENT_PATH %(dir_name, CAGE, MOUSE, CAGE, MOUSE, DAYS[i])
-        movement_data = load_mvmt_file(movement_file_path)
-        real_time_results_path = REAL_TIME_PATH %(dir_name, CAGE, MOUSE)
+    all_mice_p_correct = []
+    all_mice_rewards = []
+    mice = ['3', '6']
+    cage = '40'
+    f, axx = subplots(2, 2, sharex='row')
+    for m, mouse in enumerate(mice):
+        p_correct_all_sessions = []
+        number_of_rewards = []
+        for i, dir_name in enumerate(list_of_sessions):
+            movement_file_path = MOVEMENT_PATH %(cage, mouse, dir_name, cage, mouse, DAYS[i])
+            movement_data = load_mvmt_file(movement_file_path)
+            real_time_results_path = REAL_TIME_PATH %(cage, mouse, dir_name)
+            analysis_path = ANALYSIS_PATH %(cage, mouse, dir_name)
+            rewards_path = os.path.join(analysis_path, 'water_dispensed_frames.mat')
 
-        [bins, all_session_events] = create_match_events_and_bins(movement_data, real_time_results_path, MIDDLE_TRIALS_INDICES, [])
-        p_correct = calculate_p_correct_for_session(all_session_events, bins , NUMBER_OF_ACTIVE_ROIS, EDGE_BINS)
-        p_correct_all_sessions.append(p_correct)
+            [bins, all_session_events] = create_match_events_and_bins(movement_data, real_time_results_path,
+                                                                      MIDDLE_TRIALS_INDICES, [])
+            [x_location, _] = create_match_events_and_bins(movement_data, real_time_results_path,
+                                                           MIDDLE_TRIALS_INDICES, [], key='x')
+            activations = np.sum(all_session_events, axis=0) >= 2
+            print('number of activations:%i' %np.sum(activations))
+            rewards = loadmat(rewards_path)['water_dispensed_frames'][0]
+            number_of_rewards.append(np.sum([len(x[0]) for x in rewards]))
+            plot_activation_bins(x_location, activations, 'c%sm%s session %i' % (cage, mouse, i))
+            p_correct = calculate_p_correct_for_session(activations, bins, EDGE_BINS)
+            p_correct_all_sessions.append(p_correct)
 
-    print p_correct_all_sessions
+            if i == 0: # Plot session 0 for minerva
 
-    timed_output_dirname = '%s_%s' % (RESULTS_PATH + r'\p_correct\c' + CAGE + 'm' + MOUSE + r'\p',
-                                      time.strftime('%Y_%m_%d__%H_%M_%S'))
-    create_output_directory(timed_output_dirname)
+                t = np.arange(len(bins)) / 10
+                axx[0, m].plot(t, x_location/10, 'b')
+                axx[0, m].plot(t[activations], x_location[activations]/10, 'ro', label='Active frame')
+                axx[0, m].set_xlim(0, 615)
+                axx[0, m].set_xlabel('Time (sec)', fontsize=20)
+                axx[0, m].set_ylabel('Position (cm)', fontsize=20)
+                axx[0, m].set_title('C%sM%s' % (cage, mouse), fontsize=20)
+                setp(axx[0, m], yticks=[0, np.max(x_location/10)])
+                setp(axx[0, m], yticklabels=['0', '70'])
+                setp(axx[0, m], xticks=[0, 600])
+                setp(axx[0, m], xticklabels=['0', '600'])
 
-    np.savez(timed_output_dirname + r'\p_correct.npz',
-             p_correct_all_sessions = p_correct_all_sessions)
+        all_mice_p_correct.append(np.array(p_correct_all_sessions))
+        all_mice_rewards.append(np.array(number_of_rewards))
 
-    sio.savemat(timed_output_dirname + r'\p_correct.mat',
-                {'p_correct_all_sessions': p_correct_all_sessions})
+    """Create figure for minerva 2020"""
+    for i in range(2):
+        axx[1, 0].plot(all_mice_p_correct[i], label='C%sM%s' %(cage, mice[i]))
+        axx[1, 1].plot(all_mice_rewards[i], label='C%sM%s' %(cage, mice[i]))
+
+        axx[1, i].spines["top"].set_visible(False)
+        axx[1, i].spines["right"].set_visible(False)
+        axx[1, i].set_xlabel('Time (days)', fontsize=20)
+        setp(axx[1, i], xticks=np.arange(5))
+        setp(axx[1, i], xticklabels=['1','3','5','7','9'])
+
+    axx[1, 0].set_ylabel('P(Correct)', fontsize=20)
+    axx[1, 1].set_ylabel('Rewards', fontsize=20)
+    axx[1, 0].set_ylim([0, 1])
+    axx[1, 1].set_ylim([0, 40])
+    axx[1, 0].legend(fontsize=16)
+    for i in range(2):
+        for j in range(2):
+            for xtick in axx[i, j].xaxis.get_major_ticks():
+                xtick.label.set_fontsize(20)
+            for ytick in axx[i, j].yaxis.get_major_ticks():
+                ytick.label.set_fontsize(20)
+
+    f.show()
+    raw_input()
+    # timed_output_dirname = '%s_%s' % (RESULTS_PATH + r'\p_correct\c' + CAGE + 'm' + MOUSE + r'\p',
+    #                                   time.strftime('%Y_%m_%d__%H_%M_%S'))
+    # create_output_directory(timed_output_dirname)
+    #
+    # np.savez(timed_output_dirname + r'\p_correct.npz',
+    #          p_correct_all_sessions = p_correct_all_sessions)
+    #
+    # sio.savemat(timed_output_dirname + r'\p_correct.mat',
+    #             {'p_correct_all_sessions': p_correct_all_sessions})
 
 def main3():
     """This main computes the significance of the activity in the edges"""

@@ -200,8 +200,6 @@ def extract_nitzans_data(cage, mouse):
             bins_traces[i] = bins_traces[i][:-1]
             velocity_traces[i] = velocity_traces[i][:-1]
 
-
-
     for i in xrange(NUMBER_OF_SESSIONS):
         print 'Number of frames in session %d: %d' % \
               (i, events_traces[i].shape[1])
@@ -1432,7 +1430,7 @@ def main2():
         bambi_average_chosen_recurrence.append(average_dynamics \
             (bambi_track_dynamics_chosen, 'recurrence')[0])
 
-    ###### plot recurrence ######
+    ###### plot recurrence - two figures ######
     f, axx = subplots(1, 2, sharey='row', sharex='row')
     f.subplots_adjust(top=0.9)
     colors = ['blue', 'green', 'orange']
@@ -1500,6 +1498,136 @@ def main2():
     f.show()
     raw_input('Press enter to quit')
 
+def main3():
+    """This main is for plotting the recurrence figure averaged for the two mice (Minerva 2020)"""
+    mice = {('40', '6'), ('40', '3')}
+    nitzan_average_edge_recurrence = []
+    nitzan_average_non_edge_recurrence = []
+    bambi_average_edge_recurrence = []
+    bambi_average_non_edge_recurrence = []
+    bambi_average_chosen_recurrence = []
+
+    for mouse in mice:
+        cage = mouse[0]
+        mouse_num = mouse[1]
+        data = {'nitzan': {},
+                'bambi': {}}
+
+        [bins_traces, _, events_traces, bucket_events_traces] = extract_nitzans_data(cage, mouse_num)
+        data['nitzan'] = set_in_data(data['nitzan'], bins_traces, events_traces,
+                                     bucket_events_traces)
+
+        [bins_traces, _, events_traces, bucket_events_traces] = extract_bambi_data(cage, mouse_num)
+        data['bambi'] = set_in_data(data['bambi'], bins_traces, events_traces,
+                                    bucket_events_traces)
+
+        # Matching all neurons' IDs to the global ID
+        nitzan_registration, bambi_registration, ROI_global_indices = load_cell_registration(mouse_num)
+        data['nitzan']['global_numbering_events'] = renumber_sessions_cells_ID \
+            (data['nitzan']['events_traces'], nitzan_registration)
+
+        data['bambi']['global_numbering_events'] = renumber_sessions_cells_ID \
+            (data['bambi']['events_traces'], bambi_registration)
+
+        data['bambi']['chosen roi indices'] = ROI_global_indices
+
+        data['nitzan']['global_numbering_bucket'] = {}
+        data['nitzan']['global_numbering_bucket']['first'] = \
+            renumber_sessions_cells_ID(
+                data['nitzan']['bucket_events_traces']['first'], nitzan_registration)
+
+        data['nitzan']['global_numbering_bucket']['last'] = \
+            renumber_sessions_cells_ID(
+                data['nitzan']['bucket_events_traces']['last'], nitzan_registration)
+
+        data['bambi']['global_numbering_bucket'] = {}
+        data['bambi']['global_numbering_bucket']['first'] = \
+            renumber_sessions_cells_ID(
+                data['bambi']['bucket_events_traces']['first'], bambi_registration)
+
+        data['bambi']['global_numbering_bucket']['last'] = \
+            renumber_sessions_cells_ID(
+                data['bambi']['bucket_events_traces']['last'], bambi_registration)
+
+        # Finding edge cells from all days
+        data['nitzan']['edge_cells'] = find_edge_cells_for_all_sessions \
+            (data['nitzan']['bins_traces'],
+             data['nitzan']['global_numbering_events'],
+             EDGE_PERCENT, EDGE_BINS)
+
+        data['bambi']['edge_cells'] = find_edge_cells_for_all_sessions \
+            (data['bambi']['bins_traces'],
+             data['bambi']['global_numbering_events'],
+             EDGE_PERCENT, EDGE_BINS)
+
+        nitzan_track_dynamics_edge = \
+            analyze_track_dynamics(data['nitzan'], 'edge_cells')
+        bambi_track_dynamics_edge = \
+            analyze_track_dynamics(data['bambi'], 'edge_cells')
+        nitzan_track_dynamics_non_edge = \
+            analyze_track_dynamics(data['nitzan'], 'non_edge_cells')
+        bambi_track_dynamics_non_edge = \
+            analyze_track_dynamics(data['bambi'], 'non_edge_cells')
+        bambi_track_dynamics_chosen = \
+            analyze_track_dynamics(data['bambi'], 'chosen_rois')
+
+        nitzan_average_edge_recurrence.append(average_dynamics \
+                                                  (nitzan_track_dynamics_edge, 'recurrence')[0])
+        nitzan_average_non_edge_recurrence.append(average_dynamics \
+                                                      (nitzan_track_dynamics_non_edge, 'recurrence')[0])
+        bambi_average_edge_recurrence.append(average_dynamics \
+                                                 (bambi_track_dynamics_edge, 'recurrence')[0])
+        bambi_average_non_edge_recurrence.append(average_dynamics \
+                                                     (bambi_track_dynamics_non_edge, 'recurrence')[0])
+        bambi_average_chosen_recurrence.append(average_dynamics \
+                                                   (bambi_track_dynamics_chosen, 'recurrence')[0])
+
+    ###### plot recurrence - two figures ######
+    f, axx = subplots(2, 2, sharey='row', sharex='row')
+    f.subplots_adjust(top=0.9)
+    colors = ['blue', 'green', 'orange']
+    rcParams["font.family"] = "ariel"
+    # Plot for each mouse
+    # Phase 0
+    m = ['3', '6']
+    for i in range(2):
+        # For Phase 0
+        a, s = probabilities_properties(nitzan_average_edge_recurrence[i])
+        axx[i, 0].errorbar(arange(NUMBER_OF_SESSIONS), a, s, label='Phase 0', color=colors[0])
+        a, s = probabilities_properties(nitzan_average_non_edge_recurrence[i])
+        axx[i, 0].errorbar(arange(NUMBER_OF_SESSIONS), a, s, color=colors[2])
+        axx[i, 0].set_ylabel('C40M%s\n Recurrence probability' %m[i] , fontsize=16)
+        axx[i, 0].set_xlabel('Elapsed Time (Days)', fontsize=20)
+        axx[i, 0].locator_params(axis='y', nbins=5)
+        axx[i, 0].spines["top"].set_visible(False)
+        axx[i, 0].spines["right"].set_visible(False)
+        # For Phase 1
+        a, s = probabilities_properties(bambi_average_edge_recurrence[i])
+        line1 = axx[i, 1].errorbar(arange(NUMBER_OF_SESSIONS), a, s, color=colors[0])
+        a, s = probabilities_properties(bambi_average_non_edge_recurrence[i])
+        line3 = axx[i, 1].errorbar(arange(NUMBER_OF_SESSIONS), a, s, color=colors[2])
+        a, s = probabilities_properties(bambi_average_chosen_recurrence[i])
+        line2 = axx[i, 1].errorbar(arange(NUMBER_OF_SESSIONS), a, s,  color=colors[1])
+        axx[i, 1].set_xlabel('Elapsed Time (Days)', fontsize=20)
+        axx[i, 1].spines["top"].set_visible(False)
+        axx[i, 1].spines["right"].set_visible(False)
+        axx[i, 1].set_xticks(np.arange(NUMBER_OF_SESSIONS))
+    axx[0, 0].set_title('Phase 1', fontsize=20)
+    axx[0, 1].set_title('Phase 2', fontsize=20)
+    legend((line1, line2, line3), ('Edge cells', 'Chosen cells', 'Non edge cells'), fontsize=16)
+    setp(axx, xticks=range(5))
+    setp(axx, xticklabels=['0', '2', '4', '6', '8'])
+    for i in range(2):
+        for j in range(2):
+            for xtick in axx[i, j].xaxis.get_major_ticks():
+                xtick.label.set_fontsize(20)
+            for ytick in axx[i, j].yaxis.get_major_ticks():
+                ytick.label.set_fontsize(20)
+            box = axx[i, j].get_position()
+            axx[i, j].set_position([box.x0, box.y0 + box.height * 0.2,
+                                    box.width, box.height * 0.8])
+    f.show()
+    raw_input('Press enter to quit')
 
 if __name__ == '__main__':
-    main2()
+    main3()
