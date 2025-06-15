@@ -22,10 +22,12 @@ for i=1:2
     real_time_path = 'Z:\Short term data storage\Data storage (1 year)\experiments\real_time_imaging';
 
     %% count number of water frames for each session
+    mouse = '3';
+    real_time_path = 'Z:\experiments\projects\bambi\linear_track\analysis\nitzang_c40m3\1_linear_track';
     number_of_sessions = size(LINEAR_TRACK_SESSIONS, 1);
     session_count_of_water = zeros(1,number_of_sessions);
     for session = 1:number_of_sessions
-        water_file_path = [real_time_path, '\', LINEAR_TRACK_SESSIONS{session}, '\c', CAGE, 'm', mouse, '\water_dispensed_frames.mat'];
+        water_file_path = [real_time_path, '\', LINEAR_TRACK_SESSIONS{session}, '\water_dispensed_frames.mat'];
         load(water_file_path);
         for trial = 1:length(water_dispensed_frames)
             session_count_of_water(session) = session_count_of_water(session) + length(water_dispensed_frames{trial});
@@ -68,3 +70,13 @@ for i=1:2
 end
 
 legend('C40M6', 'C40M3')
+
+
+
+figure();
+plot(session_count_of_water, '-o'); hold on;
+ylim([0 50]);
+xlim([0.9 5.1]);
+ylabel('# Water rewards', 'FontSize', 20);
+xlabel('#Session', 'FontSize', 20);
+set(gca, 'Xtick', 1:number_of_sessions, 'FontSize', 20);
